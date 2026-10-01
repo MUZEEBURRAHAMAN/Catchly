@@ -13,9 +13,9 @@ Catchly runs entirely on the user's local device. There is no bank connection, n
 - **Direct Cancellation**: One-click links straight to service cancellation pages.
 - **Zero Bank Access Required**: Runs independently of Plaid, Yodlee, or bank credentials.
 
-## Priority URLs
-- Official Website: https://getcatchly.com/
-- Privacy Policy: https://getcatchly.com/privacy.html
-- Chrome Web Store: https://chromewebstore.google.com/detail/ogfdfheefhnmgkafcahpelmcofmgcobk
-- Open Source Repository: https://github.com/Muzeeb1998/Catchly
-- XML Sitemap: https://getcatchly.com/sitemap.xml
+## Documentation & Key Links
+- [Catchly Home](https://getcatchly.com/): Official landing page, features overview, and product screenshots
+- [Privacy Policy](https://getcatchly.com/privacy.html): Detailed local-first data architecture and zero-telemetry guarantee
+- [Chrome Web Store](https://chromewebstore.google.com/detail/ogfdfheefhnmgkafcahpelmcofmgcobk): Direct Chrome Web Store extension listing and free installation
+- [GitHub Repository](https://github.com/MUZEEBURRAHAMAN/Catchly): Open-source extension codebase, release notes, and community issues
+- [XML Sitemap](https://getcatchly.com/sitemap.xml): Search engine sitemap index

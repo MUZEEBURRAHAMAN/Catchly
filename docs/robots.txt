@@ -2,11 +2,17 @@
 User-agent: *
 Allow: /
 
-# AI & LLM Search Crawlers
+# AI & LLM Search Crawlers (GEO / AEO Discoverability)
 User-agent: GPTBot
 Allow: /
 
+User-agent: ChatGPT-User
+Allow: /
+
 User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
 Allow: /
 
 User-agent: PerplexityBot
@@ -19,6 +25,15 @@ User-agent: Google-Extended
 Allow: /
 
 User-agent: CCBot
+Allow: /
+
+User-agent: FacebookBot
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: Bytespider
 Allow: /
 
 # Sitemap declaration

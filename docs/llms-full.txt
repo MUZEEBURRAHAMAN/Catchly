@@ -9,7 +9,7 @@
 - **Platforms Supported**: Google Chrome, Brave, Microsoft Edge, Opera, and other Chromium browsers
 - **License**: MIT (Open Source)
 - **Website**: https://getcatchly.com
-- **Repository**: https://github.com/Muzeeb1998/Catchly
+- **Repository**: https://github.com/MUZEEBURRAHAMAN/Catchly
 
 ## Privacy & Security Architecture
 1. **Local-First Storage**: All subscription lists, spend analytics, renewal dates, and usage metadata reside in `chrome.storage.local`.
@@ -28,4 +28,4 @@
 - Homepage: https://getcatchly.com/
 - Privacy Policy: https://getcatchly.com/privacy.html
 - Chrome Web Store: https://chromewebstore.google.com/detail/ogfdfheefhnmgkafcahpelmcofmgcobk
-- GitHub: https://github.com/Muzeeb1998/Catchly
+- GitHub: https://github.com/MUZEEBURRAHAMAN/Catchly
