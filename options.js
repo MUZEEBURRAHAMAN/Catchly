@@ -177,20 +177,33 @@ function showWaitlistError(scope, message) {
 }
 
 // ----------------------------------------------------------------------------
-// welcome — existing behavior (unchanged)
+// welcome — existing behavior with clear toolbar guidance
 // ----------------------------------------------------------------------------
 function wireWelcome() {
-  document.getElementById('w-go')?.addEventListener('click', () => {
+  document.getElementById('w-go')?.addEventListener('click', async () => {
     document.getElementById('welcome').classList.add('hidden');
     document.getElementById('settings').classList.remove('hidden');
-    // Update URL without reloading
+    const tip = document.getElementById('settings-tip');
+    if (tip) {
+      tip.classList.remove('hidden');
+      tip.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
     history.replaceState({}, '', 'options.html');
+    try {
+      if (chrome.action?.openPopup) {
+        await chrome.action.openPopup();
+      }
+    } catch {
+      // Browser may restrict programmatic openPopup; guidance banner is visible
+    }
   });
   document.getElementById('w-seed')?.addEventListener('click', async () => {
     await seedSampleData();
     await chrome.runtime.sendMessage({ type: 'reschedule_all' });
     document.getElementById('welcome').classList.add('hidden');
     document.getElementById('settings').classList.remove('hidden');
+    const tip = document.getElementById('settings-tip');
+    if (tip) tip.classList.remove('hidden');
     history.replaceState({}, '', 'options.html');
   });
 }
@@ -207,6 +220,8 @@ async function loadSettings() {
   document.getElementById('opt-threshold').value = s.shadowDaysThreshold;
   document.getElementById('opt-currency').value = s.currency;
   document.getElementById('opt-detect').checked = s.detectOnPages;
+  const themeEl = document.getElementById('opt-theme');
+  if (themeEl) themeEl.value = s.theme || 'system';
 }
 
 function wireSettings() {
@@ -236,6 +251,26 @@ function wireSettings() {
   bind('opt-threshold', 'shadowDaysThreshold', 'num');
   bind('opt-currency', 'currency', 'val');
   bind('opt-detect', 'detectOnPages');
+
+  const themeEl = document.getElementById('opt-theme');
+  if (themeEl) {
+    themeEl.addEventListener('change', async (e) => {
+      const t = e.target.value;
+      document.documentElement.setAttribute('data-theme', t);
+      try { localStorage.setItem('catchly_theme_cache', t); } catch {}
+      await setSettings({ theme: t });
+    });
+  }
+
+  // Cross-tab/popup sync for theme setting
+  chrome.storage?.onChanged?.addListener((changes, area) => {
+    if (area === 'local' && changes.settings_v1?.newValue) {
+      const nextTheme = changes.settings_v1.newValue.theme || 'system';
+      document.documentElement.setAttribute('data-theme', nextTheme);
+      const sel = document.getElementById('opt-theme');
+      if (sel && sel.value !== nextTheme) sel.value = nextTheme;
+    }
+  });
 }
 
 function wireDataButtons() {

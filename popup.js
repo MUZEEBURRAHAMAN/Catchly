@@ -31,7 +31,8 @@ import {
 import { SERVICES, listServices } from './lib/merchants.js';
 import {
   uid, fmtMoney, fmtRelative, fmtDate, daysUntil,
-  urgencyOf, toMonthly, toYearly, nextRenewalAfter, esc
+  urgencyOf, toMonthly, toYearly, nextRenewalAfter, esc,
+  parseLocalDateInput, toLocalDateInputValue
 } from './lib/utils.js';
 import {
   COPY as WL_COPY,
@@ -177,37 +178,78 @@ function wireTabs() {
   });
 }
 
+export function showBannerToast(msg, type = 'info') {
+  let toast = document.getElementById('catchly-ui-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'catchly-ui-toast';
+    toast.style.cssText = `
+      position: fixed; top: 10px; left: 50%; transform: translateX(-50%) translateY(-20px);
+      background: var(--ink); color: var(--canvas); padding: 7px 14px; border-radius: 6px;
+      font-size: 12px; font-weight: 500; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      opacity: 0; transition: transform 160ms ease-out, opacity 160ms ease-out; pointer-events: none;
+      max-width: 340px; text-align: center;
+    `;
+    document.body.appendChild(toast);
+  }
+  if (type === 'error') toast.style.background = 'var(--danger)';
+  else if (type === 'success') toast.style.background = 'var(--success)';
+  else toast.style.background = 'var(--ink)';
+  toast.textContent = msg;
+  requestAnimationFrame(() => {
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateX(-50%) translateY(0)';
+  });
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(-50%) translateY(-20px)';
+  }, 2600);
+}
+
 // ----------------------------------------------------------------------------
 // summary strip
 // ----------------------------------------------------------------------------
 function renderSummary() {
   const active = state.subs.filter(s => s.status === 'active');
-  const month = active.reduce((sum, s) => sum + toMonthly(s.amount || 0, s.cycle || 'monthly'), 0);
-  const year = active.reduce((sum, s) => sum + toYearly(s.amount || 0, s.cycle || 'monthly'), 0);
-  // P2 #TC-EDGE-010: subs can have heterogeneous currencies but renderSummary
-  // sums raw amounts ignoring conversion. If we naively render via
-  // fmtMoney(sum, state.settings.currency) the prefix lies (e.g. "$" on a
-  // total that includes EUR amounts). Detect distinct currencies and surface
-  // "Mixed" instead of a misleading single-currency total. Title attribute
-  // lists the actual currencies for transparency.
-  const currencies = new Set();
+  const monthByCurr = {};
+  const yearByCurr = {};
   for (const s of active) {
-    currencies.add((s.currency || state.settings.currency || 'USD').toUpperCase());
+    const cur = (s.currency || state.settings?.currency || 'USD').toUpperCase();
+    monthByCurr[cur] = (monthByCurr[cur] || 0) + toMonthly(s.amount || 0, s.cycle || 'monthly');
+    yearByCurr[cur] = (yearByCurr[cur] || 0) + toYearly(s.amount || 0, s.cycle || 'monthly');
   }
-  const mixed = currencies.size > 1;
+
+  const currencies = Object.keys(monthByCurr);
+  const mixed = currencies.length > 1;
   const monthEl = document.getElementById('stat-month');
   const yearEl = document.getElementById('stat-year');
-  if (mixed) {
-    const list = Array.from(currencies).sort().join(', ');
-    monthEl.textContent = 'Mixed';
-    yearEl.textContent = 'Mixed';
-    monthEl.title = `Subs span multiple currencies (${list}); totals omitted to avoid a misleading single-currency sum.`;
-    yearEl.title = monthEl.title;
-  } else {
-    monthEl.textContent = fmtMoney(month, state.settings.currency);
-    yearEl.textContent = fmtMoney(year, state.settings.currency);
+
+  if (currencies.length === 0) {
+    const base = state.settings?.currency || 'USD';
+    monthEl.textContent = fmtMoney(0, base);
+    yearEl.textContent = fmtMoney(0, base);
     monthEl.removeAttribute('title');
     yearEl.removeAttribute('title');
+  } else if (!mixed) {
+    const base = currencies[0];
+    monthEl.textContent = fmtMoney(monthByCurr[base], base);
+    yearEl.textContent = fmtMoney(yearByCurr[base], base);
+    monthEl.removeAttribute('title');
+    yearEl.removeAttribute('title');
+  } else {
+    // Multi-currency: sort by monthly volume descending
+    const sorted = Object.entries(monthByCurr).sort((a, b) => b[1] - a[1]);
+    const topCurr = sorted[0][0];
+    const topMonth = sorted[0][1];
+    const topYear = yearByCurr[topCurr];
+    const otherCount = sorted.length - 1;
+    const fullMonthStr = sorted.map(([c, amt]) => fmtMoney(amt, c)).join(' + ');
+    const fullYearStr = sorted.map(([c]) => fmtMoney(yearByCurr[c], c)).join(' + ');
+
+    monthEl.textContent = `${fmtMoney(topMonth, topCurr)}${otherCount > 0 ? ` (+${otherCount})` : ''}`;
+    yearEl.textContent = `${fmtMoney(topYear, topCurr)}${otherCount > 0 ? ` (+${otherCount})` : ''}`;
+    monthEl.title = `Total spend across currencies: ${fullMonthStr}`;
+    yearEl.title = `Yearly spend across currencies: ${fullYearStr}`;
   }
   document.getElementById('stat-count').textContent = String(active.length);
 }
@@ -245,16 +287,18 @@ function localLogoUrl(slug) {
 
 function brandSquareHtml({ serviceKey, color, name, logo, cdnSlug } = {}, size = 32) {
   const svc = serviceKey ? SERVICES[serviceKey] : null;
-  const slug = cdnSlug || svc?.cdnSlug || null;
-  const brand = color || svc?.color || '#15110C';
+  const rawSlug = cdnSlug || svc?.cdnSlug || null;
+  const slug = typeof rawSlug === 'string' && /^[a-z0-9_-]+$/i.test(rawSlug) ? rawSlug : null;
+  const rawBrand = color || svc?.color || '#15110C';
+  const brand = typeof rawBrand === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(rawBrand) ? rawBrand : '#15110C';
   const displayName = name || svc?.name || '';
   const initial = (displayName || '?').trim().charAt(0).toUpperCase() || '?';
   const radius = size >= 40 ? 8 : 6;
   const fontSize = Math.max(10, Math.round(size * 0.45));
   const imgSize = Math.round(size * 0.6);
-  const styleTile = `width:${size}px;height:${size}px;border-radius:${radius}px;background:${esc(brand)};`;
+  const styleTile = `width:${size}px;height:${size}px;border-radius:${radius}px;background:${brand};`;
   if (slug) {
-    return `<span class="brand-square" data-initial="${esc(initial)}" data-fs="${fontSize}" style="${styleTile}"><img src="${localLogoUrl(slug)}" alt="" width="${imgSize}" height="${imgSize}" loading="lazy"/></span>`;
+    return `<span class="brand-square" data-initial="${esc(initial)}" data-fs="${fontSize}" style="${styleTile}"><img src="${esc(localLogoUrl(slug))}" alt="" width="${imgSize}" height="${imgSize}" loading="lazy"/></span>`;
   }
   // Fallback: solid brand bg + white letter
   return `<span class="brand-square brand-fallback" style="${styleTile}font-size:${fontSize}px;">${esc(initial)}</span>`;
@@ -610,8 +654,24 @@ function renderCalendar() {
       const names = buckets[day].map(s => s.name).join(', ');
       el.setAttribute('aria-label', `${dateLabel}: ${names}`);
       el.setAttribute('tabindex', '0');
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', () => {
+        grid.querySelectorAll('.cal-day-selected').forEach(c => c.classList.remove('cal-day-selected'));
+        el.classList.add('cal-day-selected');
+        renderSelectedDayUpcoming(new Date(year, month, day), buckets[day]);
+      });
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          el.click();
+        }
+      });
     } else {
       el.setAttribute('aria-label', dateLabel);
+      el.addEventListener('click', () => {
+        grid.querySelectorAll('.cal-day-selected').forEach(c => c.classList.remove('cal-day-selected'));
+        renderCalendarUpcoming();
+      });
     }
     el.innerHTML = `<div>${day}</div>`;
     if (buckets[day]) {
@@ -660,10 +720,50 @@ function closeCalendarDrawer() {
   drawer.setAttribute('aria-hidden', 'true');
 }
 
+function buildCalUpcomingRow(sub, ts) {
+  const li = document.createElement('li');
+  li.className = 'cal-upcoming-row';
+  li.setAttribute('tabindex', '0');
+  li.setAttribute('role', 'button');
+  const u = urgencyOf(ts);
+  const whenClass = u === 'safe' ? '' : `when-${u}`;
+  li.innerHTML = `
+    ${brandSquareHtml(sub, 24)}
+    <div class="cal-upcoming-main">
+      <div class="cal-upcoming-name" dir="auto">${esc(sub.name)}${sub.isTrial ? ' <span class="sub-pill pill-trial">trial</span>' : ''}</div>
+      <div class="cal-upcoming-meta">${esc(fmtDate(ts))}</div>
+    </div>
+    <div class="cal-upcoming-right">
+      <div class="cal-upcoming-amount">${fmtMoney(sub.amount || 0, sub.currency)}</div>
+      <div class="cal-upcoming-when ${whenClass}">${esc(fmtRelative(ts))}</div>
+    </div>
+  `;
+  const open = () => { closeCalendarDrawer(); openDrawer(sub.id); };
+  li.addEventListener('click', open);
+  li.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+  });
+  return li;
+}
+
+function renderSelectedDayUpcoming(date, subs) {
+  const list = document.getElementById('cal-upcoming-list');
+  const title = document.querySelector('.cal-upcoming .card-eyebrow');
+  if (title) title.textContent = `Renewals on ${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+  if (!list) return;
+  list.innerHTML = '';
+  for (const sub of subs) {
+    const ts = sub.isTrial && sub.trialEndsAt ? sub.trialEndsAt : sub.nextRenewal;
+    list.appendChild(buildCalUpcomingRow(sub, ts));
+  }
+}
+
 // "Next 30 days" list inside the calendar drawer. Sorted ascending by
 // renewal timestamp; click a row to open that sub's detail drawer.
 function renderCalendarUpcoming() {
   const list = document.getElementById('cal-upcoming-list');
+  const title = document.querySelector('.cal-upcoming .card-eyebrow');
+  if (title) title.textContent = 'next 30 days';
   if (!list) return;
   list.innerHTML = '';
 
@@ -683,29 +783,7 @@ function renderCalendarUpcoming() {
   }
 
   for (const { sub, ts } of upcoming) {
-    const li = document.createElement('li');
-    li.className = 'cal-upcoming-row';
-    li.setAttribute('tabindex', '0');
-    li.setAttribute('role', 'button');
-    const u = urgencyOf(ts);
-    const whenClass = u === 'safe' ? '' : `when-${u}`;
-    li.innerHTML = `
-      ${brandSquareHtml(sub, 24)}
-      <div class="cal-upcoming-main">
-        <div class="cal-upcoming-name" dir="auto">${esc(sub.name)}${sub.isTrial ? ' <span class="sub-pill pill-trial">trial</span>' : ''}</div>
-        <div class="cal-upcoming-meta">${esc(fmtDate(ts))}</div>
-      </div>
-      <div class="cal-upcoming-right">
-        <div class="cal-upcoming-amount">${fmtMoney(sub.amount || 0, sub.currency)}</div>
-        <div class="cal-upcoming-when ${whenClass}">${esc(fmtRelative(ts))}</div>
-      </div>
-    `;
-    const open = () => { closeCalendarDrawer(); openDrawer(sub.id); };
-    li.addEventListener('click', open);
-    li.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
-    });
-    list.appendChild(li);
+    list.appendChild(buildCalUpcomingRow(sub, ts));
   }
 }
 
@@ -719,22 +797,27 @@ function renderInsights() {
   const byCat = {};
   for (const s of active) {
     const cat = s.category || 'Other';
-    byCat[cat] = (byCat[cat] || 0) + toMonthly(s.amount || 0, s.cycle || 'monthly');
+    const cur = (s.currency || state.settings?.currency || 'USD').toUpperCase();
+    if (!byCat[cat]) byCat[cat] = { total: 0, byCur: {} };
+    const m = toMonthly(s.amount || 0, s.cycle || 'monthly');
+    byCat[cat].total += m;
+    byCat[cat].byCur[cur] = (byCat[cat].byCur[cur] || 0) + m;
   }
-  const entries = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
-  const max = entries[0]?.[1] || 1;
+  const entries = Object.entries(byCat).sort((a, b) => b[1].total - a[1].total);
+  const max = entries[0]?.[1]?.total || 1;
   const bars = document.getElementById('cat-bars');
   bars.innerHTML = '';
   if (entries.length === 0) {
     bars.innerHTML = `<div style="font-size:12px;color:var(--muted);text-align:center;padding:8px 0;">No data yet.</div>`;
   } else {
-    for (const [name, amt] of entries) {
+    for (const [name, data] of entries) {
+      const curLabels = Object.entries(data.byCur).map(([c, amt]) => `${fmtMoney(amt, c)}/mo`).join(' + ');
       const row = document.createElement('div');
       row.className = 'cat-row';
       row.innerHTML = `
         <div class="cat-name">${esc(name)}</div>
-        <div class="cat-bar"><div class="cat-bar-fill" style="width:${Math.round((amt / max) * 100)}%"></div></div>
-        <div class="cat-amt">${fmtMoney(amt, state.settings.currency)}/mo</div>
+        <div class="cat-bar"><div class="cat-bar-fill" style="width:${Math.round((data.total / max) * 100)}%"></div></div>
+        <div class="cat-amt">${esc(curLabels)}</div>
       `;
       bars.appendChild(row);
     }
@@ -750,7 +833,7 @@ function renderInsights() {
       const li = document.createElement('li');
       let text = '';
       if (e.type === 'price_change') {
-        const cur = e.currency || state.settings.currency;
+        const cur = e.currency || state.settings?.currency || 'USD';
         text = `${e.subName}: ${fmtMoney(e.from, cur)} → ${fmtMoney(e.to, cur)}`;
       } else if (e.type === 'capture_added') {
         text = `Tracked ${e.subName}`;
@@ -771,8 +854,20 @@ function renderInsights() {
   }
 
   // year recap
-  const yearTotal = active.reduce((sum, s) => sum + toYearly(s.amount || 0, s.cycle || 'monthly'), 0);
-  document.getElementById('recap-num').textContent = fmtMoney(yearTotal, state.settings.currency);
+  const yearByCurr = {};
+  for (const s of active) {
+    const c = (s.currency || state.settings?.currency || 'USD').toUpperCase();
+    yearByCurr[c] = (yearByCurr[c] || 0) + toYearly(s.amount || 0, s.cycle || 'monthly');
+  }
+  const yearEntries = Object.entries(yearByCurr);
+  const recapEl = document.getElementById('recap-num');
+  if (yearEntries.length === 0) {
+    recapEl.textContent = fmtMoney(0, state.settings?.currency || 'USD');
+  } else if (yearEntries.length === 1) {
+    recapEl.textContent = fmtMoney(yearEntries[0][1], yearEntries[0][0]);
+  } else {
+    recapEl.textContent = yearEntries.map(([c, amt]) => fmtMoney(amt, c)).join(' + ');
+  }
   const expensive = [...active].sort((a, b) => toMonthly(b.amount || 0, b.cycle) - toMonthly(a.amount || 0, a.cycle))[0];
   document.getElementById('recap-foot').textContent = expensive
     ? `${expensive.name} is your biggest line item (${fmtMoney(toMonthly(expensive.amount, expensive.cycle), expensive.currency)}/mo).`
@@ -833,6 +928,7 @@ function openDrawer(subId) {
       <div class="detail-row"><span class="detail-key">Yearly equivalent</span><span class="detail-val">${fmtMoney(toYearly(sub.amount, sub.cycle), sub.currency)}</span></div>
       <div class="detail-row"><span class="detail-key">${sub.isTrial ? 'Trial ends' : 'Next renewal'}</span><span class="detail-val">${esc(fmtDate(renewalTs))} <em style="color:var(--muted);font-style:normal;">(${esc(fmtRelative(renewalTs))})</em></span></div>
       ${sub.startedAt ? `<div class="detail-row"><span class="detail-key">Started</span><span class="detail-val">${esc(fmtDate(sub.startedAt))}</span></div>` : ''}
+      ${sub.notes ? `<div class="detail-row"><span class="detail-key">Notes</span><span class="detail-val" dir="auto">${esc(sub.notes)}</span></div>` : ''}
     </div>
 
     ${stepsHtml}
@@ -846,7 +942,11 @@ function openDrawer(subId) {
   `;
 
   body.querySelector('#d-cancel-open')?.addEventListener('click', () => {
-    if (sub.cancelUrl) chrome.tabs.create({ url: sub.cancelUrl });
+    if (sub.cancelUrl && /^https?:\/\//i.test(sub.cancelUrl)) {
+      chrome.tabs.create({ url: sub.cancelUrl });
+    } else {
+      showBannerToast('Invalid or unsafe cancel URL', 'error');
+    }
   });
   body.querySelector('#d-mark-cancelled')?.addEventListener('click', async () => {
     sub.status = 'cancelled';
@@ -998,12 +1098,8 @@ function openAddModal(editing = null) {
   const services = listServices();
 
   const cur = editing || {};
-  const startedAtIso = cur.startedAt
-    ? new Date(cur.startedAt).toISOString().slice(0, 10)
-    : new Date().toISOString().slice(0, 10);
-  const renewalIso = cur.nextRenewal
-    ? new Date(cur.nextRenewal).toISOString().slice(0, 10)
-    : new Date(Date.now() + 30 * 86400_000).toISOString().slice(0, 10);
+  const startedAtIso = toLocalDateInputValue(cur.startedAt || Date.now());
+  const renewalIso = toLocalDateInputValue(cur.nextRenewal || Date.now() + 30 * 86400_000);
 
   body.innerHTML = `
     ${editing ? '' : `
@@ -1064,6 +1160,16 @@ function openAddModal(editing = null) {
         <input id="f-plan" type="text" placeholder="Premium" value="${esc(cur.plan || '')}" />
       </div>
     </div>
+    <div class="form-row form-row-2">
+      <div>
+        <label>Cancel URL (optional)</label>
+        <input id="f-cancel-url" type="url" placeholder="https://..." value="${esc(cur.cancelUrl || '')}" />
+      </div>
+      <div>
+        <label>Notes (optional)</label>
+        <input id="f-notes" type="text" placeholder="e.g. Shared plan" value="${esc(cur.notes || '')}" />
+      </div>
+    </div>
     <div class="trial-toggle">
       <input id="f-trial" type="checkbox" ${cur.isTrial ? 'checked' : ''} />
       <label for="f-trial">This is a free trial</label>
@@ -1085,6 +1191,10 @@ function openAddModal(editing = null) {
       body.querySelector('#f-currency').value = svc.currency || 'USD';
       body.querySelector('#f-cycle').value = svc.cycle || 'monthly';
       body.querySelector('#f-category').value = svc.category || '';
+      if (svc.cancelUrl) {
+        const cancelInput = body.querySelector('#f-cancel-url');
+        if (cancelInput) cancelInput.value = svc.cancelUrl;
+      }
       body.dataset.pickedKey = key;
     });
   });
@@ -1103,45 +1213,37 @@ function openAddModal(editing = null) {
 
   body.querySelector('#f-save').addEventListener('click', async () => {
     const saveBtn = body.querySelector('#f-save');
-    // P1 #TC-MANUAL-023: guard against rapid double-click that would otherwise
-    // run the whole save flow twice (duplicate reschedule_all broadcast,
-    // possible double-fire of the third-sub waitlist toast).
     if (saveBtn.disabled) return;
     saveBtn.disabled = true;
     try {
       const name = body.querySelector('#f-name').value.trim();
-      if (!name) { alert('Name is required'); return; }
-      // P1 #TC-MANUAL-018: parseFloat("9,99") silently returns 9. EU/IN users
-      // entering "9,99" used to lose 99 cents per sub without any warning.
-      // Normalize comma-as-decimal when no period is present, then parse.
+      if (!name) { showBannerToast('Name is required', 'error'); return; }
       const rawAmount = body.querySelector('#f-amount').value;
       const normalizedAmount = (rawAmount && rawAmount.includes(',') && !rawAmount.includes('.'))
         ? rawAmount.replace(',', '.')
         : rawAmount;
       const parsedAmount = parseFloat(normalizedAmount);
-      if (normalizedAmount && Number.isNaN(parsedAmount)) { alert('Amount must be a number'); return; }
+      if (normalizedAmount && Number.isNaN(parsedAmount)) { showBannerToast('Amount must be a number', 'error'); return; }
       const amount = Number.isFinite(parsedAmount) ? parsedAmount : 0;
-      if (amount < 0) { alert('Amount cannot be negative'); return; }
+      if (amount < 0) { showBannerToast('Amount cannot be negative', 'error'); return; }
       const currency = body.querySelector('#f-currency').value;
       const cycle = body.querySelector('#f-cycle').value;
       const startedRaw = body.querySelector('#f-started').value;
       const renewalRaw = body.querySelector('#f-renewal').value;
-      if (!renewalRaw) { alert('Next renewal date is required'); return; }
-      const startedAt = startedRaw ? new Date(startedRaw).getTime() : Date.now();
-      const nextRenewal = new Date(renewalRaw).getTime();
-      if (Number.isNaN(nextRenewal)) { alert('Invalid renewal date'); return; }
+      if (!renewalRaw) { showBannerToast('Next renewal date is required', 'error'); return; }
+      const startedAt = startedRaw ? (parseLocalDateInput(startedRaw) || Date.now()) : Date.now();
+      const nextRenewal = parseLocalDateInput(renewalRaw);
+      if (!nextRenewal) { showBannerToast('Invalid renewal date', 'error'); return; }
       const category = body.querySelector('#f-category').value.trim();
       const plan = body.querySelector('#f-plan').value.trim();
       const isTrial = body.querySelector('#f-trial').checked;
+      const rawCancelUrl = body.querySelector('#f-cancel-url')?.value.trim();
+      const cancelUrl = rawCancelUrl && /^https?:\/\//i.test(rawCancelUrl) ? rawCancelUrl : (editing?.cancelUrl || null);
+      const notes = body.querySelector('#f-notes')?.value.trim() || '';
 
       const pickedKey = body.dataset.pickedKey || editing?.serviceKey || null;
       const svc = pickedKey ? SERVICES[pickedKey] : null;
 
-      // P1 #TC-MANUAL-006: pending-capture flow ran findPotentialDuplicate
-      // but the manual add modal went straight to saveSub. Users could add
-      // Netflix three times with no warning. Run the same check for new
-      // (non-editing) manual adds; let the user confirm if they really want
-      // to add a duplicate.
       if (!editing) {
         const dup = await findPotentialDuplicate({ name, amount, serviceKey: pickedKey });
         if (dup) {
@@ -1170,7 +1272,8 @@ function openAddModal(editing = null) {
         trialEndsAt: isTrial ? nextRenewal : null,
         category: category || (svc?.category || 'Other'),
         color: svc?.color || editing?.color || '#15110C',
-        cancelUrl: svc?.cancelUrl || editing?.cancelUrl || null
+        cancelUrl: cancelUrl || svc?.cancelUrl || null,
+        notes
       };
       if (editing && previousAmount && previousAmount !== amount) {
         await checkAndRecordPriceChange({ id, name, amount: previousAmount }, amount);
@@ -1178,10 +1281,9 @@ function openAddModal(editing = null) {
       await saveSub(sub);
       await chrome.runtime.sendMessage({ type: 'reschedule_all' });
       closeAddModal();
+      showBannerToast(editing ? 'Changes saved' : 'Subscription added', 'success');
       const wasNew = !editing;
       await refresh();
-      // Third-sub waitlist trigger — only on a NEW manual add (not edit), and
-      // only when active count just hit exactly 3. (Part B3)
       if (wasNew) await maybeShowThirdSubToast();
     } finally {
       saveBtn.disabled = false;

@@ -1,0 +1,31 @@
+# Catchly — Complete Specification & Architecture for LLMs
+
+> Comprehensive documentation for language models, answer engines, and autonomous agents analyzing Catchly.
+
+## Overview
+- **Name**: Catchly
+- **Product Type**: Browser Extension (Manifest V3)
+- **Primary Function**: Personal subscription tracker, renewal reminder, and price-hike monitor
+- **Platforms Supported**: Google Chrome, Brave, Microsoft Edge, Opera, and other Chromium browsers
+- **License**: MIT (Open Source)
+- **Website**: https://getcatchly.com
+- **Repository**: https://github.com/Muzeeb1998/Catchly
+
+## Privacy & Security Architecture
+1. **Local-First Storage**: All subscription lists, spend analytics, renewal dates, and usage metadata reside in `chrome.storage.local`.
+2. **No Bank Login**: Unlike competitors (Rocket Money, Copilot, Truebill) that require bank credentials via Plaid or MX, Catchly inspects local browser checkout pages on an explicit domain allowlist.
+3. **No External Analytics**: No Google Analytics, Mixpanel, Segment, or Sentry SDKs are bundled.
+4. **Isolated DOM**: In-page detection toasts render inside isolated Shadow DOM boundaries (`mode: "open"`) to prevent host page script collision or clickjacking.
+
+## Feature Matrix
+- Automated detection on 24+ services (Netflix, Spotify, ChatGPT, Disney+, Prime Video, Claude, Microsoft 365, Canva, Notion, GitHub, etc.)
+- Multi-currency portfolio support with dedicated breakdowns
+- Advance notification scheduling via Chrome Alarms API
+- Monthly, yearly, weekly, and quarterly recurring rollover
+- 4 built-in UI themes: System, Editorial, Utility, Dark
+
+## Official Links
+- Homepage: https://getcatchly.com/
+- Privacy Policy: https://getcatchly.com/privacy.html
+- Chrome Web Store: https://chromewebstore.google.com/detail/ogfdfheefhnmgkafcahpelmcofmgcobk
+- GitHub: https://github.com/Muzeeb1998/Catchly

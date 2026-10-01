@@ -1,18 +1,13 @@
-# Catchly
+# Catchly — Privacy Subscription Tracker Chrome Extension
 
-A privacy-first Chrome extension that tracks your subscriptions
-without ever asking for your bank login. Detects sign-ups on 24
-supported services, warns you before renewals, flags price hikes,
-points you to cancel pages, and surfaces "shadow charges" —
-services you haven't opened in weeks but are still paying for.
+Catchly is an open-source, privacy-first **subscription tracker Chrome extension** that monitors your recurring charges, renewal dates, and price hikes without ever asking for your bank login. Detects sign-ups on 24 supported services, warns you before upcoming renewals, flags unexpected rate hikes, surfaces unused "shadow charges", and provides direct links to cancel subscriptions in one click.
 
-**Status:** v0.1.0 — submitted to the Chrome Web Store. Live
-preview on getcatchly.com. Source-available under the MIT license.
+**Status:** v0.1.0 — submitted to the Chrome Web Store. MIT Licensed.
 
-- Site: <https://getcatchly.com>
-- Privacy policy: <https://getcatchly.com/privacy>
-- Submission package: `dist/catchly-v0.1.0.zip` (build recipe at
-  the bottom of this file)
+- Official Website: <https://getcatchly.com>
+- Privacy Policy: <https://getcatchly.com/privacy.html>
+- Chrome Web Store: <https://chromewebstore.google.com/detail/ogfdfheefhnmgkafcahpelmcofmgcobk>
+- Submission package: `dist/catchly-v0.1.0.zip`
 
 ---
 
@@ -37,7 +32,7 @@ here once approved.
 
 ---
 
-## What's actually working
+## Screenshots, Verified Features & Demo
 
 Everything listed below is functional code, not stubs. The
 Playwright smoke suite in `tests/smoke.spec.js` exercises the

@@ -160,10 +160,27 @@
           </div>
         </div>
 
+        <div id="settings-tip" class="card hidden" style="border-left: 3px solid var(--primary); background: var(--surface);">
+          <div style="font-size: 13px; line-height: 1.5; color: var(--ink);">
+            <strong>Ready to track your subscriptions?</strong> Click the <strong>Catchly icon</strong> in your browser toolbar to open the extension dashboard, add subscriptions, or view alerts anytime.
+          </div>
+        </div>
+
         <div class="card">
-          <h2 class="card-title">Display</h2>
+          <h2 class="card-title">Display & Appearance</h2>
           <div class="row">
-            <label class="row-l">Default currency</label>
+            <label class="row-l" for="opt-theme">Theme</label>
+            <div class="row-r">
+              <select id="opt-theme" class="sel">
+                <option value="system">System (follows your OS)</option>
+                <option value="editorial">Editorial (white + blue)</option>
+                <option value="utility">Utility (off-white + yellow)</option>
+                <option value="dark">Dark (force dark mode)</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <label class="row-l" for="opt-currency">Default currency</label>
             <div class="row-r">
               <select id="opt-currency" class="sel">
                 <option>USD</option><option>EUR</option><option>GBP</option>

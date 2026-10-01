@@ -7,17 +7,18 @@
   "permissions": [
     "storage",
     "alarms",
-    "notifications",
-    "tabs"
+    "notifications"
   ],
   "host_permissions": [
     "*://*.netflix.com/*",
     "*://*.spotify.com/*",
     "*://*.disneyplus.com/*",
+    "*://*.disney.com/*",
     "*://*.max.com/*",
     "*://*.hbomax.com/*",
     "*://*.hulu.com/*",
     "*://*.primevideo.com/*",
+    "*://*.amazon.com/*",
     "*://*.youtube.com/*",
     "*://music.apple.com/*",
     "*://tv.apple.com/*",
@@ -34,7 +35,12 @@
     "*://*.audible.com/*",
     "*://*.nytimes.com/*",
     "*://*.github.com/*",
-    "*://*.figma.com/*"
+    "*://*.figma.com/*",
+    "*://*.canva.com/*",
+    "*://one.google.com/*",
+    "*://*.apple.com/*",
+    "*://*.microsoft.com/*",
+    "*://*.office.com/*"
   ],
   "background": {
     "service_worker": "background.js",
@@ -63,10 +69,12 @@
         "*://*.netflix.com/*",
         "*://*.spotify.com/*",
         "*://*.disneyplus.com/*",
+        "*://*.disney.com/*",
         "*://*.max.com/*",
         "*://*.hbomax.com/*",
         "*://*.hulu.com/*",
         "*://*.primevideo.com/*",
+        "*://*.amazon.com/*",
         "*://*.youtube.com/*",
         "*://music.apple.com/*",
         "*://tv.apple.com/*",
@@ -83,24 +91,30 @@
         "*://*.audible.com/*",
         "*://*.nytimes.com/*",
         "*://*.github.com/*",
-        "*://*.figma.com/*"
+        "*://*.figma.com/*",
+        "*://*.canva.com/*",
+        "*://one.google.com/*",
+        "*://*.apple.com/*",
+        "*://*.microsoft.com/*",
+        "*://*.office.com/*"
       ],
       "js": ["content.js"],
-      "css": ["content.css"],
       "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["icons/*.png", "fonts/*"],
+      "resources": ["content.css"],
       "matches": [
         "*://*.netflix.com/*",
         "*://*.spotify.com/*",
         "*://*.disneyplus.com/*",
+        "*://*.disney.com/*",
         "*://*.max.com/*",
         "*://*.hbomax.com/*",
         "*://*.hulu.com/*",
         "*://*.primevideo.com/*",
+        "*://*.amazon.com/*",
         "*://*.youtube.com/*",
         "*://music.apple.com/*",
         "*://tv.apple.com/*",
@@ -117,7 +131,12 @@
         "*://*.audible.com/*",
         "*://*.nytimes.com/*",
         "*://*.github.com/*",
-        "*://*.figma.com/*"
+        "*://*.figma.com/*",
+        "*://*.canva.com/*",
+        "*://one.google.com/*",
+        "*://*.apple.com/*",
+        "*://*.microsoft.com/*",
+        "*://*.office.com/*"
       ]
     }
   ]

@@ -60,14 +60,28 @@ function clip(s, n) {
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('origin');
+    const isAllowedOrigin = typeof origin === 'string' && ORIGIN_ALLOWLIST.some(re => re.test(origin));
 
     if (request.method === 'OPTIONS') {
+      if (origin && !isAllowedOrigin) {
+        return new Response(null, { status: 403 });
+      }
       return new Response(null, { status: 204, headers: corsHeaders(origin) });
+    }
+
+    // Block non-whitelisted cross-origin callers from submitting to the waitlist
+    if (origin && !isAllowedOrigin) {
+      return json({ ok: false, error: 'forbidden' }, 403, null);
     }
 
     const url = new URL(request.url);
     if (request.method !== 'POST' || url.pathname !== '/signup') {
       return json({ ok: false, error: 'not_found' }, 404, origin);
+    }
+
+    const contentLength = parseInt(request.headers.get('content-length') || '0', 10);
+    if (contentLength > 10240) {
+      return json({ ok: false, error: 'payload_too_large' }, 413, origin);
     }
 
     let payload;

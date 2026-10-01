@@ -10,7 +10,6 @@ import {
   addPendingCapture, recordUsage, logEvent, getEvents
 } from './lib/storage.js';
 import { daysUntil, urgencyOf, fmtMoney } from './lib/utils.js';
-import { identifyFromPage } from './lib/merchants.js';
 
 const ALARM_DAILY = 'catchly_daily';
 const ALARM_BADGE = 'catchly_badge';
@@ -33,18 +32,23 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   }
 });
 
-chrome.runtime.onStartup.addListener(refreshBadge);
+chrome.runtime.onStartup.addListener(async () => {
+  await refreshBadge();
+  await runDailyChecks();
+});
 
 // ---------- alarms ----------
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === ALARM_BADGE) await refreshBadge();
   if (alarm.name === ALARM_DAILY) await runDailyChecks();
   if (alarm.name.startsWith('renewal_')) {
-    const subId = alarm.name.replace('renewal_', '');
+    const raw = alarm.name.replace('renewal_', '');
+    const subId = raw.split('_')[0];
     await fireRenewalNotification(subId);
   }
   if (alarm.name.startsWith('trial_')) {
-    const subId = alarm.name.replace('trial_', '');
+    const raw = alarm.name.replace('trial_', '');
+    const subId = raw.split('_')[0];
     await fireTrialNotification(subId);
   }
 });
@@ -134,9 +138,16 @@ async function runDailyChecks() {
 }
 
 async function scheduleAlarmsForSub(sub, settings) {
-  // Clear any old alarm
-  await chrome.alarms.clear(`renewal_${sub.id}`);
-  await chrome.alarms.clear(`trial_${sub.id}`);
+  // Clear any old alarms for this sub
+  try {
+    const all = await chrome.alarms.getAll();
+    for (const a of all) {
+      if (a.name.startsWith(`renewal_${sub.id}`) || a.name.startsWith(`trial_${sub.id}`)) {
+        await chrome.alarms.clear(a.name);
+      }
+    }
+  } catch {}
+
   // Trial-end alarm (1 day before, if isTrial)
   if (sub.isTrial && sub.trialEndsAt) {
     const when = sub.trialEndsAt - 24 * 3600_000;
@@ -144,13 +155,15 @@ async function scheduleAlarmsForSub(sub, settings) {
       await chrome.alarms.create(`trial_${sub.id}`, { when });
     }
   }
-  // Renewal alarm at earliest configured reminderDay
+
+  // Renewal alarms at each configured reminderDay (e.g. 7d, 3d, 1d)
   const daysRaw = Array.isArray(settings.reminderDays) ? settings.reminderDays : [];
   const days = daysRaw.length ? daysRaw : [3];
-  const minD = Math.min(...days);
-  const when = sub.nextRenewal - minD * 24 * 3600_000;
-  if (when > Date.now() + 30_000) {
-    await chrome.alarms.create(`renewal_${sub.id}`, { when });
+  for (const d of days) {
+    const when = sub.nextRenewal - d * 24 * 3600_000;
+    if (when > Date.now() + 30_000) {
+      await chrome.alarms.create(`renewal_${sub.id}_${d}d`, { when });
+    }
   }
 }
 
@@ -205,6 +218,9 @@ chrome.notifications.onClicked.addListener(async (notifId) => {
 });
 
 // ---------- messages ----------
+const __usageThrottle = new Map(); // key -> last write ts
+const USAGE_MIN_INTERVAL = 10 * 60 * 1000;
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   (async () => {
     try {
@@ -212,7 +228,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         const saved = await addPendingCapture(msg.payload);
         sendResponse({ ok: true, saved });
       } else if (msg.type === 'usage') {
-        await recordUsage(msg.serviceKey);
+        const now = Date.now();
+        const last = __usageThrottle.get(msg.serviceKey) || 0;
+        if (now - last >= USAGE_MIN_INTERVAL) {
+          __usageThrottle.set(msg.serviceKey, now);
+          await recordUsage(msg.serviceKey);
+        }
         sendResponse({ ok: true });
       } else if (msg.type === 'refresh_badge') {
         await refreshBadge();
@@ -231,21 +252,4 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
   })();
   return true; // async response
-});
-
-// ---------- usage tracking on every tab visit to a known service ----------
-// Throttle per-service writes — chrome.storage.local has write quotas + every
-// page-load event firing recordUsage would thrash IO on heavy browsing.
-const __usageThrottle = new Map(); // key -> last write ts
-const USAGE_MIN_INTERVAL = 10 * 60 * 1000;
-chrome.tabs.onUpdated.addListener(async (tabId, change, tab) => {
-  if (change.status !== 'complete' || !tab.url) return;
-  if (!/^https?:/.test(tab.url)) return;
-  const hit = identifyFromPage(tab.url, tab.title || '');
-  if (!hit) return;
-  const now = Date.now();
-  const last = __usageThrottle.get(hit.key) || 0;
-  if (now - last < USAGE_MIN_INTERVAL) return;
-  __usageThrottle.set(hit.key, now);
-  await recordUsage(hit.key);
 });

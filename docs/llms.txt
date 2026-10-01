@@ -1,0 +1,21 @@
+# Catchly
+
+> Catchly is a privacy-first, local-by-default Chrome extension that detects subscription sign-ups, tracks recurring charges, flags price hikes, and alerts you before renewal dates — without bank logins or user accounts.
+
+Catchly runs entirely on the user's local device. There is no bank connection, no external database of charges, and no analytics or telemetry tracking.
+
+## Core Capabilities
+- **Local Subscription Detection**: Automatically detects checkout confirmations on 24+ popular streaming, AI, productivity, and software services.
+- **Advance Renewal Alerts**: Configurable notifications 7 days, 3 days, and 1 day prior to billing.
+- **Free Trial Protection**: Countdown and 24-hour advance warnings before trials convert to paid subscriptions.
+- **Price Hike Detection**: Flags changes when services raise monthly or annual rates.
+- **Shadow Charge Alerts**: Identifies services that continue billing even when unopened for 30+ days.
+- **Direct Cancellation**: One-click links straight to service cancellation pages.
+- **Zero Bank Access Required**: Runs independently of Plaid, Yodlee, or bank credentials.
+
+## Priority URLs
+- Official Website: https://getcatchly.com/
+- Privacy Policy: https://getcatchly.com/privacy.html
+- Chrome Web Store: https://chromewebstore.google.com/detail/ogfdfheefhnmgkafcahpelmcofmgcobk
+- Open Source Repository: https://github.com/Muzeeb1998/Catchly
+- XML Sitemap: https://getcatchly.com/sitemap.xml

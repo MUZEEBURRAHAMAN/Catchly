@@ -723,6 +723,19 @@ input:focus, select:focus,
   color: var(--primary) !important;
   font-weight: 600;
 }
+.cal-day-interactive {
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+.cal-day-interactive:hover {
+  background: var(--surface-2) !important;
+}
+.cal-day-selected {
+  outline: 2px solid var(--primary) !important;
+  outline-offset: -2px;
+  background: var(--primary-soft) !important;
+  z-index: 2;
+}
 .cal-day-dots {
   position: absolute; left: 6px; right: 6px; bottom: 4px;
   display: flex; gap: 3px;

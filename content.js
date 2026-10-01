@@ -8,17 +8,24 @@
   window.__catchlyContentLoaded = true;
 
   // ---------- theme (Part C) ----------
-  // Current theme value held in a module var; updated on init and again
-  // whenever the popup broadcasts 'theme_changed'. Applied to the toast
-  // root element when one is built / on the fly when one is open.
   let __currentTheme = 'system';
   const __VALID_THEMES = { system: 1, editorial: 1, utility: 1, dark: 1 };
   try {
     chrome.storage.local.get('settings_v1', (res) => {
       const t = res && res.settings_v1 && res.settings_v1.theme;
       if (__VALID_THEMES[t]) __currentTheme = t;
-      const open = document.getElementById('__catchly_toast');
+      const open = __shadow?.getElementById('__catchly_toast');
       if (open) open.setAttribute('data-theme', __currentTheme);
+    });
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && changes.settings_v1?.newValue?.theme) {
+        const t = changes.settings_v1.newValue.theme;
+        if (__VALID_THEMES[t]) {
+          __currentTheme = t;
+          const open = __shadow?.getElementById('__catchly_toast');
+          if (open) open.setAttribute('data-theme', __currentTheme);
+        }
+      }
     });
   } catch {}
   try {
@@ -26,11 +33,37 @@
       if (!msg || msg.type !== 'theme_changed') return;
       if (__VALID_THEMES[msg.theme]) {
         __currentTheme = msg.theme;
-        const open = document.getElementById('__catchly_toast');
+        const open = __shadow?.getElementById('__catchly_toast');
         if (open) open.setAttribute('data-theme', __currentTheme);
       }
     });
   } catch {}
+
+  // ---------- shadow root host ----------
+  let __host = null;
+  let __shadow = null;
+
+  function getShadowRoot() {
+    if (__shadow && __host && __host.isConnected) return __shadow;
+    if (__host) __host.remove();
+    __host = document.createElement('catchly-toast-host');
+    __host.id = '__catchly_host';
+    __host.style.all = 'initial';
+    __host.style.position = 'fixed';
+    __host.style.right = '0';
+    __host.style.bottom = '0';
+    __host.style.zIndex = '2147483647';
+    __host.style.pointerEvents = 'none';
+
+    __shadow = __host.attachShadow({ mode: 'open' });
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = chrome.runtime.getURL('content.css');
+    __shadow.appendChild(link);
+
+    document.documentElement.appendChild(__host);
+    return __shadow;
+  }
 
   // ---------- detection ----------
   function looksLikeSubscriptionPage() {
@@ -74,10 +107,11 @@
     return /free\s+trial|start\s+trial|first\s+month\s+free|try\s+free/i.test(text);
   }
 
-  // ---------- toast UI ----------
+  // ---------- toast UI (Shadow DOM Encapsulated) ----------
   function buildToast({ serviceName, amount, cycle, isTrial, color, serviceKey }) {
+    const shadow = getShadowRoot();
     // Remove any prior toast
-    const prior = document.getElementById('__catchly_toast');
+    const prior = shadow.getElementById('__catchly_toast');
     if (prior) prior.remove();
 
     const root = document.createElement('div');
@@ -105,7 +139,7 @@
       </div>
       <button class="catchly-toast-close" data-act="dismiss" aria-label="Close">×</button>
     `;
-    document.documentElement.appendChild(root);
+    shadow.appendChild(root);
 
     requestAnimationFrame(() => root.classList.add('catchly-toast-in'));
 
@@ -151,6 +185,7 @@
   }
 
   function showToastConfirmation() {
+    const shadow = getShadowRoot();
     const c = document.createElement('div');
     c.className = 'catchly-toast catchly-toast-confirm catchly-toast-in';
     c.setAttribute('data-theme', __currentTheme);
@@ -160,7 +195,7 @@
         <div class="catchly-toast-title">Tracked.</div>
         <div class="catchly-toast-foot">Open the Catchly icon to view.</div>
       </div>`;
-    document.documentElement.appendChild(c);
+    shadow.appendChild(c);
     setTimeout(() => {
       c.classList.remove('catchly-toast-in');
       setTimeout(() => c.remove(), 250);
@@ -244,8 +279,20 @@
     });
   }
 
+  function recordPageVisit() {
+    const svc = identifyService();
+    if (svc) {
+      try {
+        chrome.runtime.sendMessage({ type: 'usage', serviceKey: svc.key });
+      } catch {}
+    }
+  }
+
   // Run after a short delay so dynamic content has time to render.
-  setTimeout(maybeTrigger, 1500);
+  setTimeout(() => {
+    recordPageVisit();
+    maybeTrigger();
+  }, 1500);
 
   // Re-check on SPA-style navigation (best-effort).
   // Use history API hooks + popstate instead of a wide MutationObserver — that
@@ -254,7 +301,10 @@
   const onUrlChange = () => {
     if (location.href === lastHref) return;
     lastHref = location.href;
-    setTimeout(maybeTrigger, 1500);
+    setTimeout(() => {
+      recordPageVisit();
+      maybeTrigger();
+    }, 1500);
   };
   const wrap = (k) => {
     const orig = history[k];
