@@ -35,7 +35,8 @@ import {
   urgencyOf, toMonthly, toYearly, nextRenewalAfter, esc,
   parseLocalDateInput, toLocalDateInputValue,
   getNoticeDeadline, daysUntilNotice,
-  createIcsContent, createGoogleCalendarUrl, exportWorkSubsCsv
+  createIcsContent, createGoogleCalendarUrl, exportWorkSubsCsv,
+  convertCurrency
 } from './lib/utils.js';
 import {
   COPY as WL_COPY,
@@ -237,46 +238,36 @@ export function showBannerToast(msg, type = 'info') {
 // ----------------------------------------------------------------------------
 function renderSummary() {
   const active = state.subs.filter(s => s.status === 'active');
-  const monthByCurr = {};
-  const yearByCurr = {};
+  const targetCur = (state.settings?.currency || 'USD').toUpperCase();
+
+  let totalMonth = 0;
+  let totalYear = 0;
+  const originalCurrencies = new Set();
+
   for (const s of active) {
-    const cur = (s.currency || state.settings?.currency || 'USD').toUpperCase();
-    monthByCurr[cur] = (monthByCurr[cur] || 0) + toMonthly(s.amount || 0, s.cycle || 'monthly');
-    yearByCurr[cur] = (yearByCurr[cur] || 0) + toYearly(s.amount || 0, s.cycle || 'monthly');
+    const sCur = (s.currency || targetCur).toUpperCase();
+    originalCurrencies.add(sCur);
+    const m = toMonthly(s.amount || 0, s.cycle || 'monthly');
+    const y = toYearly(s.amount || 0, s.cycle || 'monthly');
+    totalMonth += convertCurrency(m, sCur, targetCur);
+    totalYear += convertCurrency(y, sCur, targetCur);
   }
 
-  const currencies = Object.keys(monthByCurr);
-  const mixed = currencies.length > 1;
   const monthEl = document.getElementById('stat-month');
   const yearEl = document.getElementById('stat-year');
 
-  if (currencies.length === 0) {
-    const base = state.settings?.currency || 'USD';
-    monthEl.textContent = fmtMoney(0, base);
-    yearEl.textContent = fmtMoney(0, base);
-    monthEl.removeAttribute('title');
-    yearEl.removeAttribute('title');
-  } else if (!mixed) {
-    const base = currencies[0];
-    monthEl.textContent = fmtMoney(monthByCurr[base], base);
-    yearEl.textContent = fmtMoney(yearByCurr[base], base);
-    monthEl.removeAttribute('title');
-    yearEl.removeAttribute('title');
-  } else {
-    // Multi-currency: sort by monthly volume descending
-    const sorted = Object.entries(monthByCurr).sort((a, b) => b[1] - a[1]);
-    const topCurr = sorted[0][0];
-    const topMonth = sorted[0][1];
-    const topYear = yearByCurr[topCurr];
-    const otherCount = sorted.length - 1;
-    const fullMonthStr = sorted.map(([c, amt]) => fmtMoney(amt, c)).join(' + ');
-    const fullYearStr = sorted.map(([c]) => fmtMoney(yearByCurr[c], c)).join(' + ');
+  monthEl.textContent = fmtMoney(totalMonth, targetCur);
+  yearEl.textContent = fmtMoney(totalYear, targetCur);
 
-    monthEl.textContent = `${fmtMoney(topMonth, topCurr)}${otherCount > 0 ? ` (+${otherCount})` : ''}`;
-    yearEl.textContent = `${fmtMoney(topYear, topCurr)}${otherCount > 0 ? ` (+${otherCount})` : ''}`;
-    monthEl.title = `Total spend across currencies: ${fullMonthStr}`;
-    yearEl.title = `Yearly spend across currencies: ${fullYearStr}`;
+  if (originalCurrencies.size > 1 || (originalCurrencies.size === 1 && !originalCurrencies.has(targetCur))) {
+    const note = `Total converted to ${targetCur} from ${Array.from(originalCurrencies).join(', ')}`;
+    monthEl.title = note;
+    yearEl.title = note;
+  } else {
+    monthEl.removeAttribute('title');
+    yearEl.removeAttribute('title');
   }
+
   document.getElementById('stat-count').textContent = String(active.length);
 }
 
@@ -598,11 +589,20 @@ function buildGroup({ key, label, count, collapsed, rows, inactive }) {
 }
 
 function buildSubItem(sub, inactive) {
+  const activeCur = (state.settings?.currency || 'USD').toUpperCase();
+  const subCur = (sub.currency || activeCur).toUpperCase();
+  const isDiff = subCur !== activeCur;
+  const convertedAmt = isDiff ? convertCurrency(sub.amount || 0, subCur, activeCur) : (sub.amount || 0);
+  const displayAmount = fmtMoney(convertedAmt, activeCur);
+  const nativeHint = isDiff
+    ? `<span style="font-size:10px;color:var(--muted);display:block;text-align:right;">orig. ${fmtMoney(sub.amount || 0, subCur)}</span>`
+    : '';
+
   const li = document.createElement('li');
   li.className = inactive ? 'sub-item sub-item-inactive' : 'sub-item';
   li.setAttribute('tabindex', '0');
   li.setAttribute('role', 'button');
-  li.setAttribute('aria-label', `${sub.name}, ${fmtMoney(sub.amount || 0, sub.currency)} per ${sub.cycle || 'month'}`);
+  li.setAttribute('aria-label', `${sub.name}, ${displayAmount} per ${sub.cycle || 'month'}`);
 
   const brand = brandSquareHtml(sub, 32);
 
@@ -617,7 +617,7 @@ function buildSubItem(sub, inactive) {
         <div class="sub-meta">${esc(cancelledLabel)}</div>
       </div>
       <div class="sub-right">
-        <div class="sub-amount">${fmtMoney(sub.amount || 0, sub.currency)}</div>
+        <div class="sub-amount">${displayAmount}${nativeHint}</div>
       </div>
     `;
   } else {
@@ -643,7 +643,7 @@ function buildSubItem(sub, inactive) {
         <div class="sub-meta" dir="auto">${esc(sub.plan || sub.category || sub.cycle || '')}</div>
       </div>
       <div class="sub-right">
-        <div class="sub-amount">${fmtMoney(sub.amount || 0, sub.currency)}</div>
+        <div class="sub-amount">${displayAmount}${nativeHint}</div>
         <div class="sub-when ${whenClass}">${esc(fmtRelative(renewalTs))}</div>
       </div>
     `;
@@ -788,6 +788,11 @@ function closeCalendarDrawer() {
 }
 
 function buildCalUpcomingRow(sub, ts) {
+  const activeCur = (state.settings?.currency || 'USD').toUpperCase();
+  const subCur = (sub.currency || activeCur).toUpperCase();
+  const isDiff = subCur !== activeCur;
+  const convertedAmt = isDiff ? convertCurrency(sub.amount || 0, subCur, activeCur) : (sub.amount || 0);
+
   const li = document.createElement('li');
   li.className = 'cal-upcoming-row';
   li.setAttribute('tabindex', '0');
@@ -801,7 +806,7 @@ function buildCalUpcomingRow(sub, ts) {
       <div class="cal-upcoming-meta">${esc(fmtDate(ts))}</div>
     </div>
     <div class="cal-upcoming-right">
-      <div class="cal-upcoming-amount">${fmtMoney(sub.amount || 0, sub.currency)}</div>
+      <div class="cal-upcoming-amount">${fmtMoney(convertedAmt, activeCur)}</div>
       <div class="cal-upcoming-when ${whenClass}">${esc(fmtRelative(ts))}</div>
     </div>
   `;
@@ -859,62 +864,60 @@ function renderCalendarUpcoming() {
 // ----------------------------------------------------------------------------
 function renderInsights() {
   const active = state.subs.filter(s => s.status === 'active');
+  const targetCur = (state.settings?.currency || 'USD').toUpperCase();
 
   // category bars
   const byCat = {};
   for (const s of active) {
     const cat = s.category || 'Other';
-    const cur = (s.currency || state.settings?.currency || 'USD').toUpperCase();
-    if (!byCat[cat]) byCat[cat] = { total: 0, byCur: {} };
+    const sCur = (s.currency || targetCur).toUpperCase();
     const m = toMonthly(s.amount || 0, s.cycle || 'monthly');
-    byCat[cat].total += m;
-    byCat[cat].byCur[cur] = (byCat[cat].byCur[cur] || 0) + m;
+    const convertedM = convertCurrency(m, sCur, targetCur);
+    byCat[cat] = (byCat[cat] || 0) + convertedM;
   }
-  const entries = Object.entries(byCat).sort((a, b) => b[1].total - a[1].total);
-  const max = entries[0]?.[1]?.total || 1;
+  const entries = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+  const max = entries[0]?.[1] || 1;
   const bars = document.getElementById('cat-bars');
   bars.innerHTML = '';
   if (entries.length === 0) {
     bars.innerHTML = `<div style="font-size:12px;color:var(--muted);text-align:center;padding:8px 0;">No data yet.</div>`;
   } else {
-    for (const [name, data] of entries) {
-      const curLabels = Object.entries(data.byCur).map(([c, amt]) => `${fmtMoney(amt, c)}/mo`).join(' + ');
+    for (const [name, totalAmt] of entries) {
       const row = document.createElement('div');
       row.className = 'cat-row';
       row.innerHTML = `
         <div class="cat-name">${esc(name)}</div>
-        <div class="cat-bar"><div class="cat-bar-fill" style="width:${Math.round((data.total / max) * 100)}%"></div></div>
-        <div class="cat-amt">${esc(curLabels)}</div>
+        <div class="cat-bar"><div class="cat-bar-fill" style="width:${Math.round((totalAmt / max) * 100)}%"></div></div>
+        <div class="cat-amt">${fmtMoney(totalAmt, targetCur)}/mo</div>
       `;
       bars.appendChild(row);
     }
   }
 
   // workspace allocation (personal vs work)
-  const byWs = { personal: { total: 0, byCur: {} }, work: { total: 0, byCur: {} } };
+  const byWs = { personal: 0, work: 0 };
   for (const s of active) {
     const ws = (s.workspace === 'work') ? 'work' : 'personal';
-    const cur = (s.currency || state.settings?.currency || 'USD').toUpperCase();
+    const sCur = (s.currency || targetCur).toUpperCase();
     const m = toMonthly(s.amount || 0, s.cycle || 'monthly');
-    byWs[ws].total += m;
-    byWs[ws].byCur[cur] = (byWs[ws].byCur[cur] || 0) + m;
+    const convertedM = convertCurrency(m, sCur, targetCur);
+    byWs[ws] += convertedM;
   }
   const wsBars = document.getElementById('ws-bars');
   if (wsBars) {
     wsBars.innerHTML = '';
-    const wsMax = Math.max(byWs.personal.total, byWs.work.total, 1);
+    const wsMax = Math.max(byWs.personal, byWs.work, 1);
     const wsList = [
-      { key: 'personal', name: 'Personal', data: byWs.personal },
-      { key: 'work', name: 'Work / Business (Tax-deductible)', data: byWs.work }
+      { key: 'personal', name: 'Personal', total: byWs.personal },
+      { key: 'work', name: 'Work / Business (Tax-deductible)', total: byWs.work }
     ];
     for (const item of wsList) {
-      const curLabels = Object.entries(item.data.byCur).map(([c, amt]) => `${fmtMoney(amt, c)}/mo`).join(' + ') || '$0/mo';
       const row = document.createElement('div');
       row.className = 'cat-row';
       row.innerHTML = `
         <div class="cat-name">${esc(item.name)}</div>
-        <div class="cat-bar"><div class="cat-bar-fill" style="width:${Math.round((item.data.total / wsMax) * 100)}%"></div></div>
-        <div class="cat-amt">${esc(curLabels)}</div>
+        <div class="cat-bar"><div class="cat-bar-fill" style="width:${Math.round((item.total / wsMax) * 100)}%"></div></div>
+        <div class="cat-amt">${fmtMoney(item.total, targetCur)}/mo</div>
       `;
       wsBars.appendChild(row);
     }
@@ -930,7 +933,7 @@ function renderInsights() {
       const li = document.createElement('li');
       let text = '';
       if (e.type === 'price_change') {
-        const cur = e.currency || state.settings?.currency || 'USD';
+        const cur = e.currency || targetCur;
         text = `${e.subName}: ${fmtMoney(e.from, cur)} → ${fmtMoney(e.to, cur)}`;
       } else if (e.type === 'capture_added') {
         text = `Tracked ${e.subName}`;
@@ -951,23 +954,23 @@ function renderInsights() {
   }
 
   // year recap
-  const yearByCurr = {};
+  let totalYearly = 0;
   for (const s of active) {
-    const c = (s.currency || state.settings?.currency || 'USD').toUpperCase();
-    yearByCurr[c] = (yearByCurr[c] || 0) + toYearly(s.amount || 0, s.cycle || 'monthly');
+    const sCur = (s.currency || targetCur).toUpperCase();
+    const y = toYearly(s.amount || 0, s.cycle || 'monthly');
+    totalYearly += convertCurrency(y, sCur, targetCur);
   }
-  const yearEntries = Object.entries(yearByCurr);
   const recapEl = document.getElementById('recap-num');
-  if (yearEntries.length === 0) {
-    recapEl.textContent = fmtMoney(0, state.settings?.currency || 'USD');
-  } else if (yearEntries.length === 1) {
-    recapEl.textContent = fmtMoney(yearEntries[0][1], yearEntries[0][0]);
-  } else {
-    recapEl.textContent = yearEntries.map(([c, amt]) => fmtMoney(amt, c)).join(' + ');
-  }
-  const expensive = [...active].sort((a, b) => toMonthly(b.amount || 0, b.cycle) - toMonthly(a.amount || 0, a.cycle))[0];
+  recapEl.textContent = fmtMoney(totalYearly, targetCur);
+
+  const expensive = [...active].sort((a, b) => {
+    const aM = convertCurrency(toMonthly(a.amount || 0, a.cycle), a.currency || targetCur, targetCur);
+    const bM = convertCurrency(toMonthly(b.amount || 0, b.cycle), b.currency || targetCur, targetCur);
+    return bM - aM;
+  })[0];
+
   document.getElementById('recap-foot').textContent = expensive
-    ? `${expensive.name} is your biggest line item (${fmtMoney(toMonthly(expensive.amount, expensive.cycle), expensive.currency)}/mo).`
+    ? `${expensive.name} is your biggest line item (${fmtMoney(convertCurrency(toMonthly(expensive.amount, expensive.cycle), expensive.currency || targetCur, targetCur), targetCur)}/mo).`
     : 'Add a subscription to see insights.';
 }
 
@@ -1007,6 +1010,20 @@ function openDrawer(subId) {
        <ol class="cancel-steps">${cancelInfo.cancelSteps.map(s => `<li>${esc(s)}</li>`).join('')}</ol>`
     : '';
 
+  const activeCur = (state.settings?.currency || 'USD').toUpperCase();
+  const subCur = (sub.currency || activeCur).toUpperCase();
+  const isDiff = subCur !== activeCur;
+  const convertedAmt = isDiff ? convertCurrency(sub.amount, subCur, activeCur) : sub.amount;
+  const amountStr = isDiff
+    ? `${fmtMoney(convertedAmt, activeCur)} / ${esc(sub.cycle)} <em style="color:var(--muted);font-style:normal;font-size:11px;">(${fmtMoney(sub.amount, subCur)})</em>`
+    : `${fmtMoney(sub.amount, subCur)} / ${esc(sub.cycle)}`;
+  const monthlyStr = isDiff
+    ? `${fmtMoney(toMonthly(convertedAmt, sub.cycle), activeCur)} <em style="color:var(--muted);font-style:normal;font-size:11px;">(${fmtMoney(toMonthly(sub.amount, sub.cycle), subCur)})</em>`
+    : `${fmtMoney(toMonthly(sub.amount, sub.cycle), subCur)}`;
+  const yearlyStr = isDiff
+    ? `${fmtMoney(toYearly(convertedAmt, sub.cycle), activeCur)} <em style="color:var(--muted);font-style:normal;font-size:11px;">(${fmtMoney(toYearly(sub.amount, sub.cycle), subCur)})</em>`
+    : `${fmtMoney(toYearly(sub.amount, sub.cycle), subCur)}`;
+
   body.innerHTML = `
     <div class="detail-hero">
       ${brandSquareHtml(sub, 48)}
@@ -1020,9 +1037,9 @@ function openDrawer(subId) {
     ${trialWarn}
 
     <div class="detail-rows">
-      <div class="detail-row"><span class="detail-key">Amount</span><span class="detail-val">${fmtMoney(sub.amount, sub.currency)} / ${esc(sub.cycle)}</span></div>
-      <div class="detail-row"><span class="detail-key">Monthly equivalent</span><span class="detail-val">${fmtMoney(toMonthly(sub.amount, sub.cycle), sub.currency)}</span></div>
-      <div class="detail-row"><span class="detail-key">Yearly equivalent</span><span class="detail-val">${fmtMoney(toYearly(sub.amount, sub.cycle), sub.currency)}</span></div>
+      <div class="detail-row"><span class="detail-key">Amount</span><span class="detail-val">${amountStr}</span></div>
+      <div class="detail-row"><span class="detail-key">Monthly equivalent</span><span class="detail-val">${monthlyStr}</span></div>
+      <div class="detail-row"><span class="detail-key">Yearly equivalent</span><span class="detail-val">${yearlyStr}</span></div>
       <div class="detail-row"><span class="detail-key">${sub.isTrial ? 'Trial ends' : 'Next renewal'}</span><span class="detail-val">${esc(fmtDate(renewalTs))} <em style="color:var(--muted);font-style:normal;">(${esc(fmtRelative(renewalTs))})</em></span></div>
       ${sub.workspace ? `<div class="detail-row"><span class="detail-key">Workspace</span><span class="detail-val">${sub.workspace === 'work' ? 'Work / Business (Tax-deductible)' : 'Personal'}</span></div>` : ''}
       ${sub.noticePeriodDays ? `<div class="detail-row"><span class="detail-key">Notice deadline</span><span class="detail-val">${esc(fmtDate(getNoticeDeadline(renewalTs, sub.noticePeriodDays)))} <em style="color:var(--warning);font-style:normal;">(${daysUntilNotice(renewalTs, sub.noticePeriodDays)}d left)</em></span></div>` : ''}
@@ -1234,7 +1251,7 @@ function openAddModal(editing = null) {
         <label>Currency</label>
         <select id="f-currency">
           ${['USD','EUR','GBP','CAD','AUD','JPY','INR'].map(c =>
-            `<option ${cur.currency === c ? 'selected' : ''}>${c}</option>`).join('')}
+            `<option ${(cur.currency || state.settings?.currency || 'USD') === c ? 'selected' : ''}>${c}</option>`).join('')}
         </select>
       </div>
       <div>
@@ -1310,9 +1327,11 @@ function openAddModal(editing = null) {
       const key = btn.dataset.pick;
       const svc = SERVICES[key];
       if (!svc) return;
+      const activeCur = (cur.currency || state.settings?.currency || 'USD').toUpperCase();
       body.querySelector('#f-name').value = svc.name;
-      body.querySelector('#f-amount').value = svc.defaultPrice;
-      body.querySelector('#f-currency').value = svc.currency || 'USD';
+      const convertedPrice = convertCurrency(svc.defaultPrice || 9.99, svc.currency || 'USD', activeCur);
+      body.querySelector('#f-amount').value = convertedPrice;
+      body.querySelector('#f-currency').value = activeCur;
       body.querySelector('#f-cycle').value = svc.cycle || 'monthly';
       body.querySelector('#f-category').value = svc.category || '';
       if (svc.cancelUrl) {
@@ -1680,8 +1699,41 @@ function wireSettingsPane() {
   bind('set-trials', 'notifyTrials');
   bind('set-hikes', 'notifyHikes');
   bind('set-shadow', 'notifyShadow');
-  bind('set-currency', 'currency');
   bind('set-detect', 'detectOnPages');
+
+  // Currency change — updates settings, converts existing subscriptions, and refreshes entire UI
+  const curSelect = document.getElementById('set-currency');
+  if (curSelect) {
+    curSelect.addEventListener('change', async (e) => {
+      const newCur = e.target.value;
+      const oldCur = (state.settings?.currency || 'USD').toUpperCase();
+      if (newCur === oldCur) return;
+
+      await setSettings({ currency: newCur });
+      state.settings = await getSettings();
+
+      // Convert all existing subscriptions to the new selected currency
+      if (state.subs && state.subs.length > 0) {
+        let count = 0;
+        for (const sub of state.subs) {
+          const fromCur = (sub.currency || oldCur).toUpperCase();
+          sub.amount = convertCurrency(sub.amount, fromCur, newCur);
+          if (sub.previousAmount) {
+            sub.previousAmount = convertCurrency(sub.previousAmount, fromCur, newCur);
+          }
+          sub.currency = newCur;
+          await saveSub(sub);
+          count++;
+        }
+        await chrome.runtime.sendMessage({ type: 'reschedule_all' });
+        showBannerToast(`Currency changed to ${newCur} (${count} subs updated)`, 'success');
+      } else {
+        showBannerToast(`Currency changed to ${newCur}`, 'success');
+      }
+
+      await refresh();
+    });
+  }
 
   // Export Calendar (.ics)
   document.getElementById('btn-export-ics')?.addEventListener('click', () => {

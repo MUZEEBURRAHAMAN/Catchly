@@ -2,9 +2,9 @@
 
 import {
   getSettings, setSettings,
-  exportAll, importAll, wipeAll, seedSampleData, getAllSubs
+  exportAll, importAll, wipeAll, seedSampleData, getAllSubs, saveSub
 } from './lib/storage.js';
-import { createIcsContent, exportWorkSubsCsv } from './lib/utils.js';
+import { createIcsContent, exportWorkSubsCsv, convertCurrency } from './lib/utils.js';
 
 import {
   COPY,
@@ -250,8 +250,33 @@ function wireSettings() {
   bind('opt-hikes', 'notifyHikes');
   bind('opt-shadow', 'notifyShadow');
   bind('opt-threshold', 'shadowDaysThreshold', 'num');
-  bind('opt-currency', 'currency', 'val');
   bind('opt-detect', 'detectOnPages');
+
+  const optCurSelect = document.getElementById('opt-currency');
+  if (optCurSelect) {
+    optCurSelect.addEventListener('change', async (e) => {
+      const newCur = e.target.value;
+      const curSettings = await getSettings();
+      const oldCur = (curSettings?.currency || 'USD').toUpperCase();
+      if (newCur === oldCur) return;
+
+      await setSettings({ currency: newCur });
+
+      const subs = await getAllSubs();
+      if (subs && subs.length > 0) {
+        for (const sub of subs) {
+          const fromCur = (sub.currency || oldCur).toUpperCase();
+          sub.amount = convertCurrency(sub.amount, fromCur, newCur);
+          if (sub.previousAmount) {
+            sub.previousAmount = convertCurrency(sub.previousAmount, fromCur, newCur);
+          }
+          sub.currency = newCur;
+          await saveSub(sub);
+        }
+        await chrome.runtime.sendMessage({ type: 'reschedule_all' });
+      }
+    });
+  }
 
   const themeEl = document.getElementById('opt-theme');
   if (themeEl) {
