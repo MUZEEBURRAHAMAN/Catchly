@@ -1,0 +1,1445 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Catchly Design System v1.0 — Architecture & UI Specification</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Caveat:wght@600&display=swap" rel="stylesheet" />
+  <style>
+/* ==========================================================================
+   Catchly Design System (v1.0)
+   Privacy-First Subscription Tracker
+   ========================================================================== */
+
+:root {
+  --ds-bg: #FFFFFF;
+  --ds-surface: #F8F9FA;
+  --ds-surface-2: #F1F3F5;
+  --ds-surface-3: #E9ECEF;
+  --ds-text: #0A1628;
+  --ds-text-2: #2E3A4F;
+  --ds-muted: #6B7689;
+  --ds-faint: #9AA4B2;
+  --ds-border: #E3E8EF;
+  --ds-border-2: #CDD5DF;
+  --ds-primary: #1B5BFF;
+  --ds-primary-hover: #0F47D9;
+  --ds-primary-soft: #EBF1FF;
+  --ds-accent: #F5D547;
+  --ds-accent-hover: #E5C320;
+  --ds-accent-soft: #FFFCE0;
+  --ds-success: #12B76A;
+  --ds-success-soft: #ECFDF3;
+  --ds-warning: #F79009;
+  --ds-warning-soft: #FFFAEB;
+  --ds-danger: #F04438;
+  --ds-danger-soft: #FEF3F2;
+  --ds-code-bg: #F8F9FA;
+  --ds-nav-bg: rgba(255, 255, 255, 0.86);
+  --ds-shadow-1: 0 1px 2px rgba(10, 22, 40, 0.05);
+  --ds-shadow-2: 0 4px 12px rgba(10, 22, 40, 0.07);
+  --ds-shadow-3: 0 12px 32px -4px rgba(10, 22, 40, 0.12);
+  --ds-highlight: none;
+  --ds-ring: 0 0 0 3px rgba(27, 91, 255, 0.22);
+  --ds-radius-sm: 6px;
+  --ds-radius-md: 10px;
+  --ds-radius-lg: 16px;
+  --ds-radius-pill: 999px;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --ds-bg: #090E17;
+  --ds-surface: #0F1726;
+  --ds-surface-2: #162136;
+  --ds-surface-3: #1E2D48;
+  --ds-text: #F8FAFC;
+  --ds-text-2: #CBD5E1;
+  --ds-muted: #8896AB;
+  --ds-faint: #475569;
+  --ds-border: #1E2B42;
+  --ds-border-2: #2B3D5D;
+  --ds-primary: #3875FF;
+  --ds-primary-hover: #5B8FFF;
+  --ds-primary-soft: #142347;
+  --ds-accent: #F5D547;
+  --ds-accent-hover: #E5C320;
+  --ds-accent-soft: #2B2610;
+  --ds-success: #32D583;
+  --ds-success-soft: #082819;
+  --ds-warning: #FDB022;
+  --ds-warning-soft: #2E1B04;
+  --ds-danger: #F97066;
+  --ds-danger-soft: #2E0B08;
+  --ds-code-bg: #0C1320;
+  --ds-nav-bg: rgba(9, 14, 23, 0.84);
+  --ds-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --ds-shadow-2: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --ds-shadow-3: 0 16px 48px rgba(0, 0, 0, 0.6);
+  --ds-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --ds-ring: 0 0 0 3px rgba(56, 117, 255, 0.35);
+  color-scheme: dark;
+}
+
+/* Warm Utility Theme */
+:root[data-theme="utility"] {
+  --ds-bg: #FAF7F2;
+  --ds-surface: #FFFFFF;
+  --ds-surface-2: #F2EDE3;
+  --ds-surface-3: #E8E2D5;
+  --ds-text: #15110C;
+  --ds-text-2: #3A332A;
+  --ds-muted: #6E6557;
+  --ds-faint: #A69D8E;
+  --ds-border: #E5DFD3;
+  --ds-border-2: #C9C0AE;
+  --ds-primary: #15110C;
+  --ds-primary-hover: #2B231A;
+  --ds-primary-soft: #F2EDE3;
+  --ds-accent: #F5D547;
+  --ds-accent-hover: #E5C320;
+  --ds-accent-soft: #FFFCE0;
+  --ds-success: #12B76A;
+  --ds-success-soft: #ECFDF3;
+  --ds-warning: #F79009;
+  --ds-warning-soft: #FFFAEB;
+  --ds-danger: #F04438;
+  --ds-danger-soft: #FEF3F2;
+  --ds-code-bg: #F2EDE3;
+  --ds-nav-bg: rgba(250, 247, 242, 0.88);
+  --ds-shadow-1: 0 1px 3px rgba(21, 17, 12, 0.06);
+  --ds-shadow-2: 0 6px 16px rgba(21, 17, 12, 0.08);
+  --ds-shadow-3: 0 16px 36px rgba(21, 17, 12, 0.12);
+  --ds-highlight: none;
+  --ds-ring: 0 0 0 3px rgba(21, 17, 12, 0.2);
+  color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  background: var(--ds-bg);
+  color: var(--ds-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+code, kbd, samp, pre {
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+
+/* TOP NAVBAR */
+.ds-nav {
+  position: sticky;
+  top: 0;
+  z-index: 300;
+  background: var(--ds-nav-bg);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  border-bottom: 1px solid var(--ds-border);
+  padding: 0 24px;
+}
+.ds-nav-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  gap: 16px;
+}
+.ds-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--ds-text);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+.ds-brand img {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+}
+.ds-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--ds-surface-2);
+  border: 1px solid var(--ds-border-2);
+  color: var(--ds-text-2);
+}
+.ds-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.theme-picker {
+  display: flex;
+  background: var(--ds-surface-2);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid var(--ds-border);
+  gap: 2px;
+}
+.theme-btn {
+  background: transparent;
+  border: none;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ds-muted);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.theme-btn:hover {
+  color: var(--ds-text);
+}
+.theme-btn.active {
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  box-shadow: var(--ds-shadow-1);
+}
+
+/* SECTION TRACKER (SECOND HEADER) */
+.ds-subnav {
+  position: sticky;
+  top: 60px;
+  z-index: 290;
+  background: var(--ds-nav-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--ds-border);
+  padding: 0 20px;
+}
+.ds-subnav-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+}
+.ds-track {
+  flex: 1;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  padding: 0 10px;
+}
+.ds-track::-webkit-scrollbar { display: none; }
+.ds-nav-link {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ds-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+.ds-nav-link:hover {
+  color: var(--ds-text);
+  background: var(--ds-surface-2);
+}
+.ds-nav-link.active {
+  color: var(--ds-text);
+  background: var(--ds-surface-2);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--ds-border-2);
+}
+.ds-arrow-btn {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  color: var(--ds-text);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.ds-arrow-btn:hover { background: var(--ds-surface-2); }
+.ds-arrow-btn:disabled { opacity: 0.35; cursor: default; }
+
+/* MAIN WRAPPER */
+.ds-wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+}
+
+/* HERO */
+.ds-hero {
+  padding: 72px 0 54px;
+  border-bottom: 1px solid var(--ds-border);
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 4px 12px 4px 6px;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: 999px;
+  margin-bottom: 20px;
+  box-shadow: var(--ds-highlight);
+}
+.hero-badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ds-success);
+  box-shadow: 0 0 0 3px var(--ds-success-soft);
+}
+.ds-hero h1 {
+  font-size: clamp(38px, 5.5vw, 60px);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  margin: 0 0 20px;
+}
+.ds-hero h1 span {
+  color: var(--ds-muted);
+}
+.ds-hero-lead {
+  font-size: 18px;
+  color: var(--ds-muted);
+  max-width: 680px;
+  line-height: 1.6;
+  margin: 0 0 36px;
+}
+.ds-principles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 32px;
+}
+@media (max-width: 900px) { .ds-principles { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 540px) { .ds-principles { grid-template-columns: 1fr; } }
+.principle-card {
+  padding: 22px;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-1), var(--ds-highlight);
+}
+.principle-card h3 {
+  font-size: 14.5px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--ds-text);
+  letter-spacing: -0.01em;
+}
+.principle-card p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ds-muted);
+  line-height: 1.5;
+}
+
+/* SECTIONS */
+.ds-section {
+  padding: 80px 0 64px;
+  border-bottom: 1px solid var(--ds-border);
+}
+.section-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ds-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+.ds-section h2 {
+  font-size: clamp(26px, 3.2vw, 34px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  margin: 0 0 12px;
+}
+.ds-section-desc {
+  font-size: 16px;
+  color: var(--ds-muted);
+  max-width: 640px;
+  line-height: 1.55;
+  margin: 0 0 40px;
+}
+
+/* COLOR SWATCHES */
+.swatch-group {
+  margin-bottom: 40px;
+}
+.swatch-group h3 {
+  font-size: 14.5px;
+  font-weight: 600;
+  margin: 0 0 16px;
+  color: var(--ds-text);
+}
+.swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 14px;
+}
+.swatch-card {
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  overflow: hidden;
+  box-shadow: var(--ds-shadow-1), var(--ds-highlight);
+}
+.swatch-fill {
+  height: 72px;
+  border-bottom: 1px solid var(--ds-border);
+  position: relative;
+}
+.swatch-info {
+  padding: 12px 14px;
+}
+.swatch-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ds-text);
+  display: block;
+}
+.swatch-hex {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ds-muted);
+  display: block;
+  margin-top: 3px;
+}
+.swatch-token {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  color: var(--ds-primary);
+  display: block;
+  margin-top: 2px;
+}
+
+/* DUAL PALETTES */
+.dual-palette {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 40px;
+}
+@media (max-width: 720px) { .dual-palette { grid-template-columns: 1fr; } }
+.palette-box {
+  padding: 24px;
+  border-radius: var(--ds-radius-md);
+  border: 1px solid var(--ds-border);
+}
+.palette-box.light {
+  background: #FFFFFF;
+  color: #0A1628;
+}
+.palette-box.dark {
+  background: #090E17;
+  color: #F8FAFC;
+  border-color: #1E2B42;
+}
+
+/* TYPE SPECIMEN */
+.type-card {
+  padding: 32px;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-lg);
+  margin-bottom: 20px;
+  box-shadow: var(--ds-shadow-1), var(--ds-highlight);
+}
+.type-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.type-name {
+  font-size: 15px;
+  font-weight: 700;
+  margin-right: 6px;
+}
+
+/* TYPE SCALE TABLE */
+.scale-table {
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  overflow: hidden;
+  background: var(--ds-surface);
+}
+.scale-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 160px;
+  gap: 16px;
+  align-items: baseline;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--ds-border);
+}
+.scale-row:last-child { border-bottom: none; }
+@media (max-width: 680px) {
+  .scale-row { grid-template-columns: 1fr; gap: 6px; }
+  .scale-row .scale-spec { text-align: left; }
+}
+.scale-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: var(--ds-primary);
+}
+.scale-spec {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ds-muted);
+  text-align: right;
+}
+
+/* SPACING GRID */
+.space-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 90px;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.space-bar {
+  height: 22px;
+  background: var(--ds-primary-soft);
+  border: 1px solid var(--ds-primary);
+  border-radius: 4px;
+}
+
+/* MOTION GRID */
+.motion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 16px;
+}
+.motion-card {
+  padding: 20px;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-1), var(--ds-highlight);
+}
+.motion-card h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.motion-card code {
+  font-size: 11px;
+  color: var(--ds-muted);
+  display: block;
+  margin-bottom: 12px;
+}
+.motion-track {
+  height: 6px;
+  background: var(--ds-surface-2);
+  border-radius: 99px;
+  overflow: hidden;
+  position: relative;
+}
+.motion-dot {
+  width: 24px;
+  height: 6px;
+  background: var(--ds-primary);
+  border-radius: 99px;
+  position: absolute;
+  left: 0;
+  transition: transform var(--dur) var(--ease);
+}
+.motion-card:hover .motion-dot {
+  transform: translateX(120px);
+}
+
+/* COMPONENT PLAYGROUND */
+.comp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+}
+.comp-box {
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  overflow: hidden;
+  box-shadow: var(--ds-shadow-1), var(--ds-highlight);
+}
+.comp-stage {
+  padding: 32px 24px;
+  background: var(--ds-surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-height: 160px;
+  background-image: radial-gradient(var(--ds-border) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+.comp-meta {
+  padding: 16px 20px;
+  border-top: 1px solid var(--ds-border);
+}
+.comp-meta h4 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.comp-meta p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ds-muted);
+  line-height: 1.5;
+}
+
+/* REAL LIVE COMPONENTS */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 16px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  border-radius: var(--ds-radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary {
+  background: var(--ds-primary);
+  color: #FFFFFF;
+}
+.btn-primary:hover {
+  background: var(--ds-primary-hover);
+}
+.btn-secondary {
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  border-color: var(--ds-border-2);
+  box-shadow: var(--ds-shadow-1);
+}
+.btn-secondary:hover {
+  background: var(--ds-surface-2);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--ds-muted);
+}
+.btn-ghost:hover {
+  background: var(--ds-surface-2);
+  color: var(--ds-text);
+}
+.btn-danger {
+  background: var(--ds-danger-soft);
+  color: var(--ds-danger);
+  border-color: transparent;
+}
+.btn-danger:hover {
+  background: var(--ds-danger);
+  color: #FFFFFF;
+}
+.btn-accent {
+  background: var(--ds-accent);
+  color: #15110C;
+}
+.btn-accent:hover {
+  background: var(--ds-accent-hover);
+}
+
+/* SUBSCRIPTION CARD PREVIEW */
+.sub-demo-item {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-1);
+}
+.sub-demo-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sub-demo-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 13px;
+  color: #FFFFFF;
+}
+.sub-demo-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ds-text);
+  margin-bottom: 2px;
+}
+.sub-demo-cycle {
+  font-size: 11.5px;
+  color: var(--ds-muted);
+}
+.sub-demo-right {
+  text-align: right;
+}
+.sub-demo-price {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ds-text);
+}
+.badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 2px 7px;
+  border-radius: 999px;
+  margin-top: 3px;
+}
+.badge-safe { background: var(--ds-success-soft); color: var(--ds-success); }
+.badge-soon { background: var(--ds-warning-soft); color: var(--ds-warning); }
+.badge-urgent { background: var(--ds-danger-soft); color: var(--ds-danger); }
+
+/* TOAST PREVIEW */
+.toast-preview {
+  width: 100%;
+  max-width: 320px;
+  padding: 14px 16px;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border-2);
+  border-left: 4px solid var(--ds-primary);
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-3);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.toast-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ds-text);
+  margin-bottom: 4px;
+}
+.toast-desc {
+  font-size: 12px;
+  color: var(--ds-muted);
+  line-height: 1.45;
+  margin-bottom: 8px;
+}
+
+/* FLOW DIAGRAMS */
+.flow-card {
+  padding: 24px;
+  border-radius: var(--ds-radius-md);
+  border: 1px solid var(--ds-border);
+  margin-bottom: 20px;
+}
+.flow-card.bad {
+  background: var(--ds-surface-2);
+}
+.flow-card.good {
+  background: var(--ds-surface);
+  border-color: var(--ds-primary);
+  box-shadow: var(--ds-shadow-2);
+}
+.flow-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.flow-steps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.flow-box {
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  border: 1px solid var(--ds-border);
+  background: var(--ds-surface);
+  color: var(--ds-text);
+}
+.flow-card.bad .flow-box {
+  border-style: dashed;
+  background: var(--ds-bg);
+}
+.flow-card.good .flow-box.highlight {
+  background: var(--ds-primary);
+  color: #FFFFFF;
+  border-color: var(--ds-primary);
+}
+
+/* CODE BLOCKS */
+.code-block {
+  background: var(--ds-code-bg);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-md);
+  padding: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  line-height: 1.7;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--ds-text-2);
+  margin-top: 16px;
+}
+.code-block .token-prop { color: var(--ds-primary); font-weight: 600; }
+.code-block .token-val { color: var(--ds-success); }
+.code-block .token-comment { color: var(--ds-muted); font-style: italic; }
+
+/* DO / DON'T */
+.dodont-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 30px;
+}
+@media (max-width: 680px) { .dodont-grid { grid-template-columns: 1fr; } }
+.dodont-box {
+  padding: 24px;
+  border-radius: var(--ds-radius-md);
+  border: 1px solid var(--ds-border);
+  background: var(--ds-surface);
+}
+.dodont-box.do h4 { color: var(--ds-success); }
+.dodont-box.dont h4 { color: var(--ds-danger); }
+.dodont-box h4 {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dodont-box ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13.5px;
+  color: var(--ds-text-2);
+  line-height: 1.7;
+}
+
+/* FOOTER */
+.ds-footer {
+  padding: 48px 0;
+  border-top: 1px solid var(--ds-border);
+  text-align: center;
+  font-size: 13px;
+  color: var(--ds-muted);
+}
+  </style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<header class="ds-nav">
+  <div class="ds-nav-inner">
+    <a href="#top" class="ds-brand">
+      <img src="appicon.png" alt="Catchly Logo" />
+      <span>Catchly</span>
+      <span class="ds-tag">Design System v1.0</span>
+    </a>
+    <div class="ds-nav-actions">
+      <div class="theme-picker" role="radiogroup" aria-label="Theme selector">
+        <button type="button" class="theme-btn active" data-theme-val="dark">Dark</button>
+        <button type="button" class="theme-btn" data-theme-val="light">Light</button>
+        <button type="button" class="theme-btn" data-theme-val="utility">Utility</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- SECOND STICKY SUBNAV / SECTION TRACKER -->
+<nav class="ds-subnav" id="dsSubnav">
+  <div class="ds-subnav-inner">
+    <button type="button" class="ds-arrow-btn" id="arrowLeft" aria-label="Scroll left">&larr;</button>
+    <div class="ds-track" id="dsTrack">
+      <a href="#colors" class="ds-nav-link active">Colors</a>
+      <a href="#typography" class="ds-nav-link">Typography</a>
+      <a href="#scale" class="ds-nav-link">Type Scale</a>
+      <a href="#spacing" class="ds-nav-link">Spacing</a>
+      <a href="#motion" class="ds-nav-link">Motion</a>
+      <a href="#radius-elevation" class="ds-nav-link">Radius &amp; Elevation</a>
+      <a href="#components" class="ds-nav-link">Components</a>
+      <a href="#architecture" class="ds-nav-link">Privacy Flows</a>
+      <a href="#tokens" class="ds-nav-link">CSS Tokens</a>
+      <a href="#rules" class="ds-nav-link">Do / Don't</a>
+    </div>
+    <button type="button" class="ds-arrow-btn" id="arrowRight" aria-label="Scroll right">&rarr;</button>
+  </div>
+</nav>
+
+<div class="ds-wrap" id="top">
+
+  <!-- HERO -->
+  <section class="ds-hero">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      <span>Catchly Core Foundations · Updated October 2026</span>
+    </div>
+    <h1>Catchly Product<br /><span>Design System</span></h1>
+    <p class="ds-hero-lead">
+      A high-precision design system crafted specifically for Catchly's local-first Chrome extension and marketing surfaces. Built around calm clarity, tabular financial scanning, and privacy by architecture.
+    </p>
+
+    <div class="ds-principles">
+      <div class="principle-card">
+        <h3>Privacy by Architecture</h3>
+        <p>No telemetry, no tracking pixels. The interface communicates safety and trustworthiness through transparent local storage.</p>
+      </div>
+      <div class="principle-card">
+        <h3>Tabular Numerics</h3>
+        <p>All prices, currencies, countdowns, and renewal dates use JetBrains Mono tabular figures to eliminate visual jitter during sort.</p>
+      </div>
+      <div class="principle-card">
+        <h3>Urgency with Restraint</h3>
+        <p>Color is functional. Crimson, amber, and green are reserved exclusively for billing urgency, keeping the workspace calm.</p>
+      </div>
+      <div class="principle-card">
+        <h3>Compact Density</h3>
+        <p>Engineered for the 380px extension popup, 420px side panel, and responsive web screens with a strict 4px grid.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 01 · COLOR PALETTE -->
+  <section class="ds-section" id="colors">
+    <div class="section-eyebrow">01 · Palette</div>
+    <h2>Color Tokens</h2>
+    <p class="ds-section-desc">
+      A curated system featuring dark mode as a first-class citizen. Deep navy-blacks lift into distinct surface elevations, contrasted with high-contrast text and purposeful urgency indicators.
+    </p>
+
+    <div class="dual-palette">
+      <div class="palette-box dark">
+        <h4 style="margin:0 0 4px;font-size:14px;">Midnight Dark (Default)</h4>
+        <p style="font-size:12px;color:#8896AB;margin:0 0 16px;">#090E17 canvas with multi-tiered surface ladders</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div style="width:42px;height:42px;border-radius:6px;background:#090E17;border:1px solid #1E2B42;" title="Canvas"></div>
+          <div style="width:42px;height:42px;border-radius:6px;background:#0F1726;border:1px solid #1E2B42;" title="Surface"></div>
+          <div style="width:42px;height:42px;border-radius:6px;background:#162136;border:1px solid #2B3D5D;" title="Surface 2"></div>
+          <div style="width:42px;height:42px;border-radius:6px;background:#1E2D48;border:1px solid #2B3D5D;" title="Surface 3"></div>
+          <div style="width:42px;height:42px;border-radius:6px;background:#3875FF;" title="Primary Blue"></div>
+          <div style="width:42px;height:42px;border-radius:6px;background:#F5D547;" title="Catchly Gold"></div>
+        </div>
+      </div>
+      <div class="palette-box light">
+        <h4 style="margin:0 0 4px;font-size:14px;">Editorial Light</h4>
+        <p style="font-size:12px;color:#6B7689;margin:0 0 16px;">#FFFFFF canvas with crisp hairlines &amp; whisper shadows</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div style="width:42px;height:42px;border-radius:6px;background:#FFFFFF;border:1px solid #E3E8EF;" title="Canvas"></div>
+          <div style="width:42px;height:42px;border-radius:6px;background:#F8F9FA;border:1px solid #E3E8EF;" title="Surface"></div>
+          <div style="width:42px;height:42px;border-radius:6px;background:#F1F3F5;border:1px solid #CDD5DF;" title="Surface 2"></div>
+          <div style="width:42px;height:42px;border-radius:6px;background:#E9ECEF;border:1px solid #CDD5DF;" title="Surface 3"></div>
+          <div style="width:42px;height:42px;border-radius:6px;background:#1B5BFF;" title="Primary Blue"></div>
+          <div style="width:42px;height:42px;border-radius:6px;background:#F5D547;" title="Catchly Gold"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Urgency Hues -->
+    <div class="swatch-group">
+      <h3>Billing Urgency States (Strict Semantic Rule)</h3>
+      <div class="swatch-grid">
+        <div class="swatch-card">
+          <div class="swatch-fill" style="background:#12B76A;"></div>
+          <div class="swatch-info">
+            <span class="swatch-title">Safe (&gt; 7 days)</span>
+            <span class="swatch-hex">#12B76A</span>
+            <span class="swatch-token">--ds-success</span>
+          </div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-fill" style="background:#F79009;"></div>
+          <div class="swatch-info">
+            <span class="swatch-title">Renewal Soon (&le; 7 days)</span>
+            <span class="swatch-hex">#F79009</span>
+            <span class="swatch-token">--ds-warning</span>
+          </div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-fill" style="background:#F04438;"></div>
+          <div class="swatch-info">
+            <span class="swatch-title">Urgent (&le; 2 days / Trial)</span>
+            <span class="swatch-hex">#F04438</span>
+            <span class="swatch-token">--ds-danger</span>
+          </div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-fill" style="background:#1B5BFF;"></div>
+          <div class="swatch-info">
+            <span class="swatch-title">Primary Brand Accent</span>
+            <span class="swatch-hex">#1B5BFF</span>
+            <span class="swatch-token">--ds-primary</span>
+          </div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-fill" style="background:#F5D547;"></div>
+          <div class="swatch-info">
+            <span class="swatch-title">Catchly Gold</span>
+            <span class="swatch-hex">#F5D547</span>
+            <span class="swatch-token">--ds-accent</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 · TYPOGRAPHY -->
+  <section class="ds-section" id="typography">
+    <div class="section-eyebrow">02 · Typography</div>
+    <h2>Type System</h2>
+    <p class="ds-section-desc">
+      A dual-font engine pairing Inter for fluid, readable UI layout and JetBrains Mono for monetary precision and dates.
+    </p>
+
+    <div class="type-card">
+      <div class="type-meta">
+        <span class="type-name">Inter</span>
+        <span class="ds-tag">Primary UI Font</span>
+        <span class="ds-tag">400, 500, 600, 700</span>
+      </div>
+      <p style="font-size:24px;font-weight:600;margin:0 0 10px;letter-spacing:-0.02em;">
+        Never pay for an abandoned subscription again.
+      </p>
+      <p style="font-size:14.5px;color:var(--ds-muted);margin:0;max-width:600px;">
+        Used across all body copy, inputs, headings, options settings, and dialog descriptions. Provides balanced letterforms with natural tracking.
+      </p>
+    </div>
+
+    <div class="type-card">
+      <div class="type-meta">
+        <span class="type-name">JetBrains Mono</span>
+        <span class="ds-tag">Tabular Numerics &amp; Code</span>
+        <span class="ds-tag">font-variant-numeric: tabular-nums</span>
+      </div>
+      <p style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;margin:0 0 10px;color:var(--ds-primary);">
+        $17.99 / mo &bull; Renews in 3 days &bull; [2026-10-15]
+      </p>
+      <p style="font-size:14.5px;color:var(--ds-muted);margin:0;max-width:600px;">
+        Mandatory for all monetary values, renewal countdowns, badges, and technical timestamps. Every glyph has uniform width, preventing list jitter when prices update.
+      </p>
+    </div>
+  </section>
+
+  <!-- 03 · TYPE SCALE -->
+  <section class="ds-section" id="scale">
+    <div class="section-eyebrow">03 · Type Scale</div>
+    <h2>Hierarchy Scale</h2>
+    <p class="ds-section-desc">Strict, mathematically balanced font size ramp.</p>
+
+    <div class="scale-table">
+      <div class="scale-row">
+        <span class="scale-label">--fs-hero</span>
+        <span style="font-size:36px;font-weight:700;letter-spacing:-0.03em;">Page Title Headline</span>
+        <span class="scale-spec">36px / 1.1 / 700</span>
+      </div>
+      <div class="scale-row">
+        <span class="scale-label">--fs-title</span>
+        <span style="font-size:24px;font-weight:600;letter-spacing:-0.02em;">Section Header</span>
+        <span class="scale-spec">24px / 1.2 / 600</span>
+      </div>
+      <div class="scale-row">
+        <span class="scale-label">--fs-subhead</span>
+        <span style="font-size:18px;font-weight:600;letter-spacing:-0.01em;">Card Title / Key Metric</span>
+        <span class="scale-spec">18px / 1.3 / 600</span>
+      </div>
+      <div class="scale-row">
+        <span class="scale-label">--fs-body</span>
+        <span style="font-size:14.5px;font-weight:400;">Primary prose and descriptions</span>
+        <span class="scale-spec">14.5px / 1.55 / 400</span>
+      </div>
+      <div class="scale-row">
+        <span class="scale-label">--fs-caption</span>
+        <span style="font-size:12.5px;font-weight:500;color:var(--ds-muted);">Secondary metadata and table captions</span>
+        <span class="scale-spec">12.5px / 1.4 / 500</span>
+      </div>
+      <div class="scale-row">
+        <span class="scale-label">--fs-micro</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:0.04em;">STATUS PILLS &bull; BADGES</span>
+        <span class="scale-spec">11px / 1.2 / 600</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 · SPACING -->
+  <section class="ds-section" id="spacing">
+    <div class="section-eyebrow">04 · Layout</div>
+    <h2>Spacing Grid (4px Base)</h2>
+    <p class="ds-section-desc">Every margin, padding, and gap adheres to the 4px geometric progression.</p>
+
+    <div class="space-row"><span class="scale-label">--space-1 (4px)</span><div class="space-bar" style="width:4px;"></div><span class="scale-spec">Micro padding</span></div>
+    <div class="space-row"><span class="scale-label">--space-2 (8px)</span><div class="space-bar" style="width:8px;"></div><span class="scale-spec">Inner badge pad</span></div>
+    <div class="space-row"><span class="scale-label">--space-3 (12px)</span><div class="space-bar" style="width:12px;"></div><span class="scale-spec">Card row gap</span></div>
+    <div class="space-row"><span class="scale-label">--space-4 (16px)</span><div class="space-bar" style="width:16px;"></div><span class="scale-spec">Card inner pad</span></div>
+    <div class="space-row"><span class="scale-label">--space-6 (24px)</span><div class="space-bar" style="width:24px;"></div><span class="scale-spec">Panel margins</span></div>
+    <div class="space-row"><span class="scale-label">--space-8 (32px)</span><div class="space-bar" style="width:32px;"></div><span class="scale-spec">Section separation</span></div>
+    <div class="space-row"><span class="scale-label">--space-12 (48px)</span><div class="space-bar" style="width:48px;"></div><span class="scale-spec">Hero whitespace</span></div>
+  </section>
+
+  <!-- 05 · MOTION -->
+  <section class="ds-section" id="motion">
+    <div class="section-eyebrow">05 · Motion</div>
+    <h2>Animation &amp; Timing Tokens</h2>
+    <p class="ds-section-desc">Snappy micro-interactions designed to make extension popups feel instantaneous.</p>
+
+    <div class="motion-grid">
+      <div class="motion-card" style="--dur:80ms;--ease:cubic-bezier(.2,0,0,1);">
+        <h4>Instant Tap</h4>
+        <code>80ms &bull; Buttons &amp; Toggles</code>
+        <div class="motion-track"><div class="motion-dot"></div></div>
+      </div>
+      <div class="motion-card" style="--dur:140ms;--ease:cubic-bezier(.16,1,.3,1);">
+        <h4>Fast Transition</h4>
+        <code>140ms &bull; Hover &amp; Tooltips</code>
+        <div class="motion-track"><div class="motion-dot"></div></div>
+      </div>
+      <div class="motion-card" style="--dur:220ms;--ease:cubic-bezier(.16,1,.3,1);">
+        <h4>Panel Slide</h4>
+        <code>220ms &bull; Calendar Drawer</code>
+        <div class="motion-track"><div class="motion-dot"></div></div>
+      </div>
+      <div class="motion-card" style="--dur:400ms;--ease:cubic-bezier(.16,1,.3,1);">
+        <h4>Toast Pop</h4>
+        <code>400ms &bull; Checkout Capture</code>
+        <div class="motion-track"><div class="motion-dot"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 · RADIUS & ELEVATION -->
+  <section class="ds-section" id="radius-elevation">
+    <div class="section-eyebrow">06 · Geometry</div>
+    <h2>Radius &amp; Elevation</h2>
+    <p class="ds-section-desc">Structured rounding and surface elevation rules.</p>
+
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-end;">
+      <div style="text-align:center;">
+        <div style="width:72px;height:72px;border:2px solid var(--ds-primary);background:var(--ds-surface);border-radius:6px;margin:0 auto 10px;"></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;display:block;"><b>--radius-sm</b><br />6px (Inputs, Badges)</span>
+      </div>
+      <div style="text-align:center;">
+        <div style="width:72px;height:72px;border:2px solid var(--ds-primary);background:var(--ds-surface);border-radius:10px;margin:0 auto 10px;"></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;display:block;"><b>--radius-md</b><br />10px (Sub Cards)</span>
+      </div>
+      <div style="text-align:center;">
+        <div style="width:72px;height:72px;border:2px solid var(--ds-primary);background:var(--ds-surface);border-radius:16px;margin:0 auto 10px;"></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;display:block;"><b>--radius-lg</b><br />16px (Modals &amp; Drawers)</span>
+      </div>
+      <div style="text-align:center;">
+        <div style="width:72px;height:36px;border:2px solid var(--ds-primary);background:var(--ds-surface);border-radius:999px;margin:18px auto 10px;"></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;display:block;"><b>--radius-pill</b><br />999px (Status, Filters)</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 · COMPONENTS PLAYGROUND -->
+  <section class="ds-section" id="components">
+    <div class="section-eyebrow">07 · Library</div>
+    <h2>Interactive Component Showcase</h2>
+    <p class="ds-section-desc">The living components used across the Catchly extension popup and website.</p>
+
+    <div class="comp-grid">
+      <!-- Buttons -->
+      <div class="comp-box">
+        <div class="comp-stage">
+          <button class="btn btn-primary">Track Sub &rarr;</button>
+          <button class="btn btn-secondary">Cancel Plan</button>
+          <button class="btn btn-accent">Try Free</button>
+          <button class="btn btn-danger">Wipe Data</button>
+        </div>
+        <div class="comp-meta">
+          <h4>Action Buttons</h4>
+          <p>Height: 38px, font-weight: 600, active-press scale: 0.97. High contrast CTA states.</p>
+        </div>
+      </div>
+
+      <!-- Subscription Item Card -->
+      <div class="comp-box">
+        <div class="comp-stage">
+          <div class="sub-demo-item">
+            <div class="sub-demo-left">
+              <div class="sub-demo-icon" style="background:#E50914;">N</div>
+              <div>
+                <div class="sub-demo-name">Netflix Standard</div>
+                <div class="sub-demo-cycle">Monthly &bull; Streaming</div>
+              </div>
+            </div>
+            <div class="sub-demo-right">
+              <div class="sub-demo-price">$17.99</div>
+              <span class="badge-pill badge-soon">in 3 days</span>
+            </div>
+          </div>
+        </div>
+        <div class="comp-meta">
+          <h4>Subscription List Card</h4>
+          <p>Compact density for popup lists. Combines brand monogram, tabular price, and urgency badge.</p>
+        </div>
+      </div>
+
+      <!-- In-Page Capture Toast -->
+      <div class="comp-box">
+        <div class="comp-stage">
+          <div class="toast-preview">
+            <div style="font-size:20px;">🛡️</div>
+            <div>
+              <div class="toast-title">Track this subscription?</div>
+              <div class="toast-desc">Catchly detected a sign-up for Spotify ($11.99/mo).</div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-primary" style="height:28px;font-size:11.5px;padding:0 10px;">Track</button>
+                <button class="btn btn-ghost" style="height:28px;font-size:11.5px;padding:0 8px;">Dismiss</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="comp-meta">
+          <h4>In-Page Shadow DOM Toast</h4>
+          <p>Renders at checkout confirmation without inheriting host page CSS. Privacy guaranteed.</p>
+        </div>
+      </div>
+
+      <!-- Urgency Alert Card -->
+      <div class="comp-box">
+        <div class="comp-stage">
+          <div style="width:100%;max-width:320px;padding:12px 14px;background:var(--ds-danger-soft);border:1px solid var(--ds-danger);border-radius:8px;">
+            <div style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;color:var(--ds-danger);margin-bottom:4px;">
+              <span>⚠️ Trial Ending Tomorrow</span>
+            </div>
+            <div style="font-size:12px;color:var(--ds-text);line-height:1.4;">
+              Adobe Creative Cloud trial converts to $54.99/mo on Friday.
+            </div>
+          </div>
+        </div>
+        <div class="comp-meta">
+          <h4>Urgency Warning Alert</h4>
+          <p>Proactive 24h countdown alert preventing unwanted recurring subscription traps.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 08 · PRIVACY ARCHITECTURE FLOWS -->
+  <section class="ds-section" id="architecture">
+    <div class="section-eyebrow">08 · Architecture</div>
+    <h2>Privacy Model &amp; Data Pipeline</h2>
+    <p class="ds-section-desc">Comparing traditional bank-linked scrapers with Catchly's local-first architecture.</p>
+
+    <div class="flow-card bad">
+      <div class="flow-head">
+        <strong style="color:var(--ds-danger);">❌ Traditional Bank Scrapers (Plaid / Rocket Money)</strong>
+        <span class="ds-tag">Privacy Vulnerable</span>
+      </div>
+      <div class="flow-steps">
+        <div class="flow-box">User Enters Bank Login</div>
+        <span>&rarr;</span>
+        <div class="flow-box">Plaid Scrapes Account History</div>
+        <span>&rarr;</span>
+        <div class="flow-box">Stored on Central Cloud Server</div>
+        <span>&rarr;</span>
+        <div class="flow-box">Vulnerable to Breaches &amp; Upsells</div>
+      </div>
+    </div>
+
+    <div class="flow-card good">
+      <div class="flow-head">
+        <strong style="color:var(--ds-success);">✅ Catchly Architecture (100% Local-First)</strong>
+        <span class="ds-tag" style="background:var(--ds-success-soft);color:var(--ds-success);">Zero Telemetry</span>
+      </div>
+      <div class="flow-steps">
+        <div class="flow-box highlight">Browser Detects Checkout</div>
+        <span>&rarr;</span>
+        <div class="flow-box">User Clicks "Track"</div>
+        <span>&rarr;</span>
+        <div class="flow-box highlight">Saved to chrome.storage.local</div>
+        <span>&rarr;</span>
+        <div class="flow-box">Data Never Leaves Your Laptop</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 09 · CSS TOKENS -->
+  <section class="ds-section" id="tokens">
+    <div class="section-eyebrow">09 · Reference</div>
+    <h2>CSS Design Tokens Code</h2>
+    <p class="ds-section-desc">Drop-in CSS variables for new extension views and marketing pages.</p>
+
+    <div class="code-block"><span class="token-comment">/* Catchly Design Tokens (v1.0) */</span>
+:root {
+  <span class="token-prop">--canvas:</span>        <span class="token-val">#FFFFFF</span>;
+  <span class="token-prop">--surface:</span>       <span class="token-val">#F8F9FA</span>;
+  <span class="token-prop">--surface-2:</span>     <span class="token-val">#F1F3F5</span>;
+  <span class="token-prop">--border:</span>        <span class="token-val">#E3E8EF</span>;
+  <span class="token-prop">--border-strong:</span> <span class="token-val">#CDD5DF</span>;
+  <span class="token-prop">--ink:</span>           <span class="token-val">#0A1628</span>;
+  <span class="token-prop">--muted:</span>         <span class="token-val">#6B7689</span>;
+  <span class="token-prop">--primary:</span>       <span class="token-val">#1B5BFF</span>;
+  <span class="token-prop">--accent:</span>        <span class="token-val">#F5D547</span>;
+  <span class="token-prop">--success:</span>       <span class="token-val">#12B76A</span>; <span class="token-comment">/* &gt; 7 days */</span>
+  <span class="token-prop">--warning:</span>       <span class="token-val">#F79009</span>; <span class="token-comment">/* &le; 7 days */</span>
+  <span class="token-prop">--danger:</span>        <span class="token-val">#F04438</span>; <span class="token-comment">/* &le; 2 days / Trials */</span>
+
+  <span class="token-prop">--radius-input:</span>  <span class="token-val">6px</span>;
+  <span class="token-prop">--radius-card:</span>   <span class="token-val">10px</span>;
+  <span class="token-prop">--radius-modal:</span>  <span class="token-val">16px</span>;
+
+  <span class="token-prop">--font-ui:</span>       <span class="token-val">'Inter', system-ui, sans-serif</span>;
+  <span class="token-prop">--font-mono:</span>     <span class="token-val">'JetBrains Mono', monospace</span>;
+}
+
+[data-theme="dark"] {
+  <span class="token-prop">--canvas:</span>        <span class="token-val">#090E17</span>;
+  <span class="token-prop">--surface:</span>       <span class="token-val">#0F1726</span>;
+  <span class="token-prop">--surface-2:</span>     <span class="token-val">#162136</span>;
+  <span class="token-prop">--border:</span>        <span class="token-val">#1E2B42</span>;
+  <span class="token-prop">--ink:</span>           <span class="token-val">#F8FAFC</span>;
+  <span class="token-prop">--muted:</span>         <span class="token-val">#8896AB</span>;
+  <span class="token-prop">--primary:</span>       <span class="token-val">#3875FF</span>;
+}</div>
+  </section>
+
+  <!-- 10 · DO / DON'T -->
+  <section class="ds-section" id="rules">
+    <div class="section-eyebrow">10 · Guidelines</div>
+    <h2>Implementation Rules (Do &amp; Don't)</h2>
+
+    <div class="dodont-grid">
+      <div class="dodont-box do">
+        <h4>&check; DO</h4>
+        <ul>
+          <li>Use <code>font-variant-numeric: tabular-nums</code> on all prices, dates, and countdown numbers.</li>
+          <li>Keep crimson (<code>--ds-danger</code>) strictly for urgent renewals (&le; 2 days) and expiring free trials.</li>
+          <li>Isolate all in-page content script toast DOM elements inside an open Shadow Root to avoid CSS bleed.</li>
+          <li>Use the 4px spacing scale for all padding, margins, and gaps.</li>
+          <li>Support Dark, Light, and System modes seamlessly across the popup and options page.</li>
+        </ul>
+      </div>
+      <div class="dodont-box dont">
+        <h4>&cross; DON'T</h4>
+        <ul>
+          <li>Never transmit subscription names, amounts, or billing credentials to any external server.</li>
+          <li>Don't use decorative drop shadows in dark mode — use the surface elevation ladder instead.</li>
+          <li>Don't invent ad-hoc hex colors outside the defined design system tokens.</li>
+          <li>Never use proportional font numbers for lists of prices to prevent layout shifting.</li>
+          <li>Don't add intrusive animations that exceed 280ms duration.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer class="ds-footer">
+    Catchly Design System v1.0 &bull; Privacy-First Subscription Tracker &bull; October 2026
+  </footer>
+
+</div>
+
+<script>
+(function() {
+  // Theme Toggle Buttons
+  const root = document.documentElement;
+  const themeBtns = document.querySelectorAll('.theme-btn');
+
+  themeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      themeBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const val = btn.dataset.themeVal;
+      root.setAttribute('data-theme', val);
+      try { localStorage.setItem('catchly_ds_theme', val); } catch(e) {}
+    });
+  });
+
+  // Restore Theme
+  try {
+    const saved = localStorage.getItem('catchly_ds_theme');
+    if (saved) {
+      root.setAttribute('data-theme', saved);
+      themeBtns.forEach(b => {
+        b.classList.toggle('active', b.dataset.themeVal === saved);
+      });
+    }
+  } catch(e) {}
+
+  // Subnav Horizontal Scroll Arrows
+  const track = document.getElementById('dsTrack');
+  const arrowLeft = document.getElementById('arrowLeft');
+  const arrowRight = document.getElementById('arrowRight');
+
+  function updateArrows() {
+    if (!track) return;
+    arrowLeft.disabled = track.scrollLeft <= 5;
+    arrowRight.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 5;
+  }
+
+  arrowLeft?.addEventListener('click', () => {
+    track.scrollBy({ left: -200, behavior: 'smooth' });
+  });
+  arrowRight?.addEventListener('click', () => {
+    track.scrollBy({ left: 200, behavior: 'smooth' });
+  });
+
+  track?.addEventListener('scroll', updateArrows, { passive: true });
+  window.addEventListener('resize', updateArrows);
+  updateArrows();
+
+  // Scrollspy for Active Link Highlight
+  const sections = document.querySelectorAll('.ds-section[id]');
+  const navLinks = document.querySelectorAll('.ds-nav-link');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        navLinks.forEach(link => {
+          const match = link.getAttribute('href') === '#' + id;
+          link.classList.toggle('active', match);
+          if (match && track) {
+            // Keep active item in view inside track
+            const linkBox = link.getBoundingClientRect();
+            const trackBox = track.getBoundingClientRect();
+            if (linkBox.left < trackBox.left || linkBox.right > trackBox.right) {
+              link.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+            }
+          }
+        });
+      }
+    });
+  }, { rootMargin: '-40% 0px -50% 0px' });
+
+  sections.forEach(sec => observer.observe(sec));
+})();
+</script>
+</body>
+</html>
