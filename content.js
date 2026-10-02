@@ -131,6 +131,7 @@
         <div class="catchly-toast-eyebrow">${label}</div>
         <div class="catchly-toast-title">${escapeHtml(serviceName)}</div>
         ${priceStr ? `<div class="catchly-toast-price">${priceStr}${isTrial ? ' after trial' : ''}</div>` : ''}
+        ${isTrial ? `<div class="catchly-toast-trial-tip" style="font-size:11px;line-height:1.3;color:#D97757;margin:4px 0 6px;font-weight:500;">👻 Pro tip: Cancel immediately in account settings. You'll retain full access until trial ends without auto-charges.</div>` : ''}
         <div class="catchly-toast-actions">
           <button class="catchly-btn catchly-btn-primary" data-act="track">Track this</button>
           <button class="catchly-btn catchly-btn-ghost" data-act="dismiss">Not now</button>
@@ -265,14 +266,31 @@
   async function maybeTrigger() {
     if (!(await detectionEnabled())) return;
     if (!looksLikeSubscriptionPage()) return;
-    const svc = identifyService();
-    if (!svc) return; // Only show toast for KNOWN services in v1; reduces noise
+    let svc = identifyService();
+    let name = svc ? svc.name : null;
+    let color = svc ? svc.color : '#1B5BFF';
+    let serviceKey = svc ? svc.key : null;
+
+    if (!svc) {
+      // Universal detection on checkout platforms or confirmation pages
+      const isCheckoutPlatform = /stripe\.com|paddle\.com|lemonsqueezy\.com|shopify\.com/i.test(location.hostname);
+      const bodyText = (document.body && document.body.innerText) || '';
+      const isConfirmation = /thank\s*you|confirmed|receipt|subscription\s*activated|welcome\s*to/i.test(document.title + ' ' + bodyText);
+      if (isCheckoutPlatform || isConfirmation) {
+        const rawTitle = document.title.split(/[-|–:•]/)[0].trim();
+        name = (rawTitle.length >= 3 && rawTitle.length <= 30) ? rawTitle : location.hostname.replace(/^www\./, '').split('.')[0];
+        name = name.charAt(0).toUpperCase() + name.slice(1);
+      } else {
+        return;
+      }
+    }
+
     const price = guessPriceAndCycle();
     const isTrial = guessIsTrial();
     buildToast({
-      serviceName: svc.name,
-      serviceKey: svc.key,
-      color: svc.color,
+      serviceName: name,
+      serviceKey: serviceKey,
+      color: color,
       amount: price ? price.amount : null,
       cycle: price ? price.cycle : 'monthly',
       isTrial

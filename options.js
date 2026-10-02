@@ -2,8 +2,9 @@
 
 import {
   getSettings, setSettings,
-  exportAll, importAll, wipeAll, seedSampleData
+  exportAll, importAll, wipeAll, seedSampleData, getAllSubs
 } from './lib/storage.js';
+import { createIcsContent, exportWorkSubsCsv } from './lib/utils.js';
 
 import {
   COPY,
@@ -320,6 +321,34 @@ function wireDataButtons() {
       }
     });
   }
+
+  document.getElementById('btn-export-ics')?.addEventListener('click', async () => {
+    const subs = await getAllSubs();
+    const ics = createIcsContent(subs);
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `catchly-renewals-${new Date().toISOString().slice(0, 10)}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  document.getElementById('btn-export-tax')?.addEventListener('click', async () => {
+    const subs = await getAllSubs();
+    const csv = exportWorkSubsCsv(subs);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `catchly-work-tax-deductions-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
 
   document.getElementById('btn-seed').addEventListener('click', async () => {
     if (!confirm('Load sample subscriptions? This will overwrite your current tracked subs.')) return;

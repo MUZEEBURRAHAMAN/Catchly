@@ -26,13 +26,16 @@ import {
   getPendingCaptures, dismissCapture, findPotentialDuplicate,
   getEvents, seedSampleData, getUsage, logEvent,
   checkAndRecordPriceChange,
-  getUiState, setUiState
+  getUiState, setUiState,
+  parseStatementCsv
 } from './lib/storage.js';
 import { SERVICES, listServices } from './lib/merchants.js';
 import {
   uid, fmtMoney, fmtRelative, fmtDate, daysUntil,
   urgencyOf, toMonthly, toYearly, nextRenewalAfter, esc,
-  parseLocalDateInput, toLocalDateInputValue
+  parseLocalDateInput, toLocalDateInputValue,
+  getNoticeDeadline, daysUntilNotice,
+  createIcsContent, createGoogleCalendarUrl, exportWorkSubsCsv
 } from './lib/utils.js';
 import {
   COPY as WL_COPY,
@@ -51,6 +54,7 @@ const state = {
   subs: [],
   settings: null,
   filter: '',
+  workspaceFilter: 'all',
   sort: 'renewal',
   calCursor: new Date(),
   events: [],
@@ -73,6 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   wireCalendarNav();
   wireDrawer();
   wireModal();
+  wireCsvModal();
   wireKeyboard();
   wireSettingsPane();
   await renderPendingCaptures();
@@ -104,9 +109,11 @@ function wireKeyboard() {
     const inField = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
     if (e.key === 'Escape') {
       const modal = document.getElementById('add-modal');
+      const csvModal = document.getElementById('csv-modal');
       const drawer = document.getElementById('drawer');
       const calDrawer = document.getElementById('calendar-drawer');
       if (modal && !modal.classList.contains('hidden')) { closeAddModal(); return; }
+      if (csvModal && !csvModal.classList.contains('hidden')) { closeCsvModal(); return; }
       if (drawer && !drawer.classList.contains('hidden')) { closeDrawer(); return; }
       if (calDrawer && !calDrawer.classList.contains('hidden')) { closeCalendarDrawer(); return; }
     }
@@ -139,6 +146,25 @@ async function renderAll() {
 function wireHeader() {
   document.getElementById('btn-add').addEventListener('click', () => openAddModal());
   document.getElementById('btn-calendar')?.addEventListener('click', () => openCalendarDrawer());
+  
+  // Side panel launch
+  const sidePanelBtn = document.getElementById('btn-sidepanel');
+  if (sidePanelBtn) {
+    sidePanelBtn.addEventListener('click', async () => {
+      try {
+        if (chrome.sidePanel && chrome.sidePanel.open) {
+          const win = await chrome.windows.getCurrent();
+          await chrome.sidePanel.open({ windowId: win.id });
+          window.close();
+        } else {
+          chrome.tabs.create({ url: chrome.runtime.getURL('popup.html') });
+        }
+      } catch (e) {
+        chrome.tabs.create({ url: chrome.runtime.getURL('popup.html') });
+      }
+    });
+  }
+
   // Gear icon removed — Settings is now a bottom tab. See wireSettingsPane().
   document.getElementById('btn-advanced')?.addEventListener('click', () => {
     chrome.runtime.openOptionsPage();
@@ -389,6 +415,22 @@ async function renderAlerts() {
         });
       }
     }
+
+    // Contract notice period deadline alert
+    if (sub.noticePeriodDays) {
+      const dNotice = daysUntilNotice(sub.nextRenewal, sub.noticePeriodDays);
+      if (dNotice !== null && dNotice >= 0 && dNotice <= 7) {
+        items.push({
+          color: 'rust',
+          icon: 'trial',
+          subRef: sub,
+          title: `Notice deadline: ${sub.name}`,
+          sub: dNotice === 0 ? 'Today is the final day to cancel before renewal!' : `${dNotice}d left to give ${sub.noticePeriodDays}d notice before renewal`,
+          action: 'Review',
+          onAction: () => openDrawer(sub.id)
+        });
+      }
+    }
   }
 
   // De-dupe per sub (one alert max in this strip)
@@ -445,6 +487,21 @@ function wireListTools() {
     state.sort = e.target.value;
     renderSubList();
   });
+
+  // Workspace filter pills
+  document.querySelectorAll('.ws-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.ws-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.workspaceFilter = btn.dataset.ws || 'all';
+      renderSubList();
+    });
+  });
+
+  // Open CSV statement import
+  document.getElementById('btn-open-csv')?.addEventListener('click', () => {
+    openCsvModal();
+  });
 }
 
 function renderSubList() {
@@ -453,6 +510,9 @@ function renderSubList() {
   ul.innerHTML = '';
 
   const filterFn = (s) => {
+    if (state.workspaceFilter && state.workspaceFilter !== 'all') {
+      if ((s.workspace || 'personal') !== state.workspaceFilter) return false;
+    }
     if (!state.filter) return true;
     return (s.name || '').toLowerCase().includes(state.filter) ||
            (s.category || '').toLowerCase().includes(state.filter);
@@ -565,13 +625,20 @@ function buildSubItem(sub, inactive) {
     const u = urgencyOf(renewalTs);
     const whenClass = u === 'safe' ? '' : `when-${u}`;
     const hike = sub.previousAmount && sub.amount > sub.previousAmount;
+    const dNotice = sub.noticePeriodDays ? daysUntilNotice(sub.nextRenewal, sub.noticePeriodDays) : null;
+    const noticePill = (dNotice !== null && dNotice >= 0 && dNotice <= 14)
+      ? `<span class="sub-pill pill-hike" title="${sub.noticePeriodDays}d notice required">notice ${dNotice}d</span>`
+      : '';
+    const wsTag = sub.workspace === 'work' ? '<span class="tag-ws tag-ws-work">work</span>' : '';
     li.innerHTML = `
       ${brand}
       <div class="sub-main">
         <div class="sub-name">
           <span dir="auto">${esc(sub.name)}</span>
+          ${wsTag}
           ${sub.isTrial ? '<span class="sub-pill pill-trial">trial</span>' : ''}
           ${hike ? '<span class="sub-pill pill-hike">price ↑</span>' : ''}
+          ${noticePill}
         </div>
         <div class="sub-meta" dir="auto">${esc(sub.plan || sub.category || sub.cycle || '')}</div>
       </div>
@@ -823,6 +890,36 @@ function renderInsights() {
     }
   }
 
+  // workspace allocation (personal vs work)
+  const byWs = { personal: { total: 0, byCur: {} }, work: { total: 0, byCur: {} } };
+  for (const s of active) {
+    const ws = (s.workspace === 'work') ? 'work' : 'personal';
+    const cur = (s.currency || state.settings?.currency || 'USD').toUpperCase();
+    const m = toMonthly(s.amount || 0, s.cycle || 'monthly');
+    byWs[ws].total += m;
+    byWs[ws].byCur[cur] = (byWs[ws].byCur[cur] || 0) + m;
+  }
+  const wsBars = document.getElementById('ws-bars');
+  if (wsBars) {
+    wsBars.innerHTML = '';
+    const wsMax = Math.max(byWs.personal.total, byWs.work.total, 1);
+    const wsList = [
+      { key: 'personal', name: 'Personal', data: byWs.personal },
+      { key: 'work', name: 'Work / Business (Tax-deductible)', data: byWs.work }
+    ];
+    for (const item of wsList) {
+      const curLabels = Object.entries(item.data.byCur).map(([c, amt]) => `${fmtMoney(amt, c)}/mo`).join(' + ') || '$0/mo';
+      const row = document.createElement('div');
+      row.className = 'cat-row';
+      row.innerHTML = `
+        <div class="cat-name">${esc(item.name)}</div>
+        <div class="cat-bar"><div class="cat-bar-fill" style="width:${Math.round((item.data.total / wsMax) * 100)}%"></div></div>
+        <div class="cat-amt">${esc(curLabels)}</div>
+      `;
+      wsBars.appendChild(row);
+    }
+  }
+
   // recent activity
   const list = document.getElementById('event-list');
   list.innerHTML = '';
@@ -927,6 +1024,8 @@ function openDrawer(subId) {
       <div class="detail-row"><span class="detail-key">Monthly equivalent</span><span class="detail-val">${fmtMoney(toMonthly(sub.amount, sub.cycle), sub.currency)}</span></div>
       <div class="detail-row"><span class="detail-key">Yearly equivalent</span><span class="detail-val">${fmtMoney(toYearly(sub.amount, sub.cycle), sub.currency)}</span></div>
       <div class="detail-row"><span class="detail-key">${sub.isTrial ? 'Trial ends' : 'Next renewal'}</span><span class="detail-val">${esc(fmtDate(renewalTs))} <em style="color:var(--muted);font-style:normal;">(${esc(fmtRelative(renewalTs))})</em></span></div>
+      ${sub.workspace ? `<div class="detail-row"><span class="detail-key">Workspace</span><span class="detail-val">${sub.workspace === 'work' ? 'Work / Business (Tax-deductible)' : 'Personal'}</span></div>` : ''}
+      ${sub.noticePeriodDays ? `<div class="detail-row"><span class="detail-key">Notice deadline</span><span class="detail-val">${esc(fmtDate(getNoticeDeadline(renewalTs, sub.noticePeriodDays)))} <em style="color:var(--warning);font-style:normal;">(${daysUntilNotice(renewalTs, sub.noticePeriodDays)}d left)</em></span></div>` : ''}
       ${sub.startedAt ? `<div class="detail-row"><span class="detail-key">Started</span><span class="detail-val">${esc(fmtDate(sub.startedAt))}</span></div>` : ''}
       ${sub.notes ? `<div class="detail-row"><span class="detail-key">Notes</span><span class="detail-val" dir="auto">${esc(sub.notes)}</span></div>` : ''}
     </div>
@@ -935,11 +1034,17 @@ function openDrawer(subId) {
 
     <div class="detail-actions">
       ${sub.cancelUrl ? `<button class="btn" id="d-cancel-open">Open cancel page</button>` : ''}
+      <button class="btn btn-secondary" id="d-add-gcal">Add to Google Calendar</button>
       <button class="btn btn-secondary" id="d-mark-cancelled">Mark as cancelled (already done)</button>
       <button class="btn btn-ghost" id="d-edit">Edit</button>
       <button class="btn btn-ghost" id="d-delete" style="color:var(--danger)">Delete</button>
     </div>
   `;
+
+  body.querySelector('#d-add-gcal')?.addEventListener('click', () => {
+    const url = createGoogleCalendarUrl(sub);
+    chrome.tabs.create({ url });
+  });
 
   body.querySelector('#d-cancel-open')?.addEventListener('click', () => {
     if (sub.cancelUrl && /^https?:\/\//i.test(sub.cancelUrl)) {
@@ -1162,6 +1267,25 @@ function openAddModal(editing = null) {
     </div>
     <div class="form-row form-row-2">
       <div>
+        <label>Workspace</label>
+        <select id="f-workspace">
+          <option value="personal" ${cur.workspace !== 'work' ? 'selected' : ''}>Personal</option>
+          <option value="work" ${cur.workspace === 'work' ? 'selected' : ''}>Work / Business (Tax-deductible)</option>
+        </select>
+      </div>
+      <div>
+        <label>Notice period (optional)</label>
+        <select id="f-notice">
+          <option value="0" ${!cur.noticePeriodDays ? 'selected' : ''}>None</option>
+          <option value="7" ${cur.noticePeriodDays === 7 ? 'selected' : ''}>7 days before</option>
+          <option value="14" ${cur.noticePeriodDays === 14 ? 'selected' : ''}>14 days before</option>
+          <option value="30" ${cur.noticePeriodDays === 30 ? 'selected' : ''}>30 days before</option>
+          <option value="60" ${cur.noticePeriodDays === 60 ? 'selected' : ''}>60 days before</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row form-row-2">
+      <div>
         <label>Cancel URL (optional)</label>
         <input id="f-cancel-url" type="url" placeholder="https://..." value="${esc(cur.cancelUrl || '')}" />
       </div>
@@ -1236,6 +1360,8 @@ function openAddModal(editing = null) {
       if (!nextRenewal) { showBannerToast('Invalid renewal date', 'error'); return; }
       const category = body.querySelector('#f-category').value.trim();
       const plan = body.querySelector('#f-plan').value.trim();
+      const workspace = body.querySelector('#f-workspace')?.value || 'personal';
+      const noticePeriodDays = parseInt(body.querySelector('#f-notice')?.value || '0', 10) || null;
       const isTrial = body.querySelector('#f-trial').checked;
       const rawCancelUrl = body.querySelector('#f-cancel-url')?.value.trim();
       const cancelUrl = rawCancelUrl && /^https?:\/\//i.test(rawCancelUrl) ? rawCancelUrl : (editing?.cancelUrl || null);
@@ -1273,6 +1399,8 @@ function openAddModal(editing = null) {
         category: category || (svc?.category || 'Other'),
         color: svc?.color || editing?.color || '#15110C',
         cancelUrl: cancelUrl || svc?.cancelUrl || null,
+        workspace,
+        noticePeriodDays,
         notes
       };
       if (editing && previousAmount && previousAmount !== amount) {
@@ -1299,6 +1427,190 @@ function closeAddModal() {
   // Clear stale picked-service state so next open starts clean
   const body = document.getElementById('add-body');
   if (body) delete body.dataset.pickedKey;
+}
+
+// ----------------------------------------------------------------------------
+// CSV Statement Importer (Offline bank / card statement parser)
+// ----------------------------------------------------------------------------
+let parsedCsvSubs = [];
+
+function wireCsvModal() {
+  const m = document.getElementById('csv-modal');
+  if (!m) return;
+
+  m.addEventListener('click', (e) => {
+    if (e.target.dataset.closeCsv !== undefined || e.target.closest('[data-close-csv]')) {
+      closeCsvModal();
+    }
+  });
+
+  const dropzone = document.getElementById('csv-dropzone');
+  const fileInput = document.getElementById('csv-file-input');
+
+  if (dropzone && fileInput) {
+    dropzone.addEventListener('click', () => fileInput.click());
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('is-dragover');
+    });
+
+    ['dragleave', 'dragend'].forEach(ev => {
+      dropzone.addEventListener(ev, () => dropzone.classList.remove('is-dragover'));
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('is-dragover');
+      const files = e.dataTransfer?.files;
+      if (files && files.length > 0) {
+        handleCsvFile(files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const files = e.target.files;
+      if (files && files.length > 0) {
+        handleCsvFile(files[0]);
+      }
+      fileInput.value = '';
+    });
+  }
+
+  // Toggle all button
+  document.getElementById('csv-toggle-all')?.addEventListener('click', () => {
+    const cbs = document.querySelectorAll('#csv-detected-list input[type="checkbox"]');
+    const anyUnchecked = Array.from(cbs).some(cb => !cb.checked);
+    cbs.forEach(cb => { cb.checked = anyUnchecked; });
+  });
+
+  // Confirm Import
+  document.getElementById('btn-import-confirmed')?.addEventListener('click', async () => {
+    const list = document.getElementById('csv-detected-list');
+    if (!list) return;
+
+    const checkedIndexes = Array.from(list.querySelectorAll('input[type="checkbox"]:checked'))
+      .map(cb => parseInt(cb.dataset.index, 10))
+      .filter(idx => !Number.isNaN(idx));
+
+    if (checkedIndexes.length === 0) {
+      showBannerToast('Please select at least one subscription', 'error');
+      return;
+    }
+
+    const toImport = checkedIndexes.map(i => parsedCsvSubs[i]).filter(Boolean);
+    let importedCount = 0;
+
+    for (const item of toImport) {
+      const sub = {
+        id: uid('sub'),
+        serviceKey: item.serviceKey || null,
+        name: item.name,
+        plan: '',
+        amount: item.amount || 0,
+        currency: item.currency || 'USD',
+        cycle: item.cycle || 'monthly',
+        startedAt: Date.now(),
+        nextRenewal: item.nextRenewal || (Date.now() + 30 * 86400_000),
+        status: 'active',
+        isTrial: false,
+        trialEndsAt: null,
+        category: item.category || 'Other',
+        color: item.color || '#15110C',
+        cancelUrl: item.cancelUrl || null,
+        workspace: item.workspace || 'personal',
+        noticePeriodDays: null,
+        notes: `Imported from bank statement (${item.rawDesc || 'CSV'})`
+      };
+      await saveSub(sub);
+      importedCount++;
+    }
+
+    await chrome.runtime.sendMessage({ type: 'reschedule_all' });
+    closeCsvModal();
+    showBannerToast(`Imported ${importedCount} subscription${importedCount === 1 ? '' : 's'}`, 'success');
+    await refresh();
+  });
+}
+
+function handleCsvFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text = e.target?.result;
+    if (typeof text !== 'string') return;
+    processCsvText(text);
+  };
+  reader.readAsText(file);
+}
+
+function processCsvText(text) {
+  parsedCsvSubs = parseStatementCsv(text, state.subs);
+  const resultsEl = document.getElementById('csv-results');
+  const countLabel = document.getElementById('csv-count-label');
+  const listEl = document.getElementById('csv-detected-list');
+
+  if (!resultsEl || !listEl) return;
+
+  resultsEl.classList.remove('hidden');
+
+  if (parsedCsvSubs.length === 0) {
+    if (countLabel) countLabel.textContent = 'No Subscriptions Found';
+    listEl.innerHTML = `
+      <li style="padding:12px;font-size:12px;color:var(--muted);text-align:center;">
+        No recognized recurring subscriptions found in this file.<br>
+        Catchly matches known merchants like Netflix, Spotify, AWS, GitHub, Google, Apple, etc.
+      </li>
+    `;
+    const btn = document.getElementById('btn-import-confirmed');
+    if (btn) btn.disabled = true;
+    return;
+  }
+
+  const btn = document.getElementById('btn-import-confirmed');
+  if (btn) btn.disabled = false;
+
+  if (countLabel) {
+    countLabel.textContent = `Detected Subscriptions (${parsedCsvSubs.length})`;
+  }
+
+  listEl.innerHTML = parsedCsvSubs.map((sub, idx) => {
+    const isNew = !sub.alreadyTracked;
+    const trackedNote = sub.alreadyTracked ? '<span style="font-size:10px;color:var(--muted);margin-left:4px;">(already tracked)</span>' : '';
+    return `
+      <li style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;min-width:0;">
+          <input type="checkbox" data-index="${idx}" ${isNew ? 'checked' : ''} style="margin:0;cursor:pointer;" />
+          <div style="min-width:0;">
+            <div style="font-weight:600;color:var(--ink);display:flex;align-items:center;">
+              <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(sub.name)}</span>
+              ${trackedNote}
+            </div>
+            <div style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              ${esc(sub.rawDesc || sub.category)}
+            </div>
+          </div>
+        </label>
+        <div style="text-align:right;white-space:nowrap;margin-left:8px;font-weight:600;color:var(--ink);">
+          ${fmtMoney(sub.amount, sub.currency)} <span style="font-size:10px;font-weight:400;color:var(--muted);">/${sub.cycle}</span>
+        </div>
+      </li>
+    `;
+  }).join('');
+}
+
+function openCsvModal() {
+  parsedCsvSubs = [];
+  const resultsEl = document.getElementById('csv-results');
+  if (resultsEl) resultsEl.classList.add('hidden');
+  const m = document.getElementById('csv-modal');
+  if (m) m.classList.remove('hidden');
+}
+
+function closeCsvModal() {
+  const m = document.getElementById('csv-modal');
+  if (m) m.classList.add('hidden');
+  parsedCsvSubs = [];
 }
 
 // ----------------------------------------------------------------------------
@@ -1370,6 +1682,41 @@ function wireSettingsPane() {
   bind('set-shadow', 'notifyShadow');
   bind('set-currency', 'currency');
   bind('set-detect', 'detectOnPages');
+
+  // Export Calendar (.ics)
+  document.getElementById('btn-export-ics')?.addEventListener('click', () => {
+    const ics = createIcsContent(state.subs);
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `catchly-renewals-${new Date().toISOString().slice(0, 10)}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showBannerToast('Calendar file exported (.ics)', 'success');
+  });
+
+  // Export Work (Tax CSV)
+  document.getElementById('btn-export-tax')?.addEventListener('click', () => {
+    const csv = exportWorkSubsCsv(state.subs);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `catchly-work-tax-deductions-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showBannerToast('Tax-deductible work subscriptions exported', 'success');
+  });
+
+  // Import Statement CSV
+  document.getElementById('btn-import-statement')?.addEventListener('click', () => {
+    openCsvModal();
+  });
 }
 
 function syncSettingsPane() {

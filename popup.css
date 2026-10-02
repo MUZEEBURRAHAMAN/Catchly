@@ -438,12 +438,127 @@ input, select, textarea { font-family: inherit; color: inherit; }
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ---------- workspace bar ---------- */
+.workspace-bar {
+  display: flex;
+  gap: 4px;
+  background: var(--surface-2);
+  padding: 3px;
+  border-radius: var(--radius-input);
+  margin-bottom: 8px;
+}
+.ws-pill {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--muted);
+  padding: 4px 8px;
+  border-radius: calc(var(--radius-input) - 2px);
+  cursor: pointer;
+  transition: all var(--t-fast);
+}
+.ws-pill:hover { color: var(--ink); }
+.ws-pill.active {
+  background: var(--canvas);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.tag-ws {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-left: 4px;
+}
+.tag-ws-work {
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 600;
+}
+.tag-ws-personal {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
 /* ---------- list tools ---------- */
 .list-tools {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin-bottom: 8px;
+}
+.list-tools .search-input {
+  flex: 1;
+  min-width: 0;
+}
+.btn-import-csv {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-strong);
+}
+
+/* ---------- CSV dropzone & modal ---------- */
+.csv-dropzone {
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius-card);
+  padding: 24px 16px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--surface);
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.csv-dropzone:hover, .csv-dropzone.dragover {
+  border-color: var(--primary);
+  background: var(--surface-2);
+}
+.csv-detected-list .csv-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.csv-detected-list .csv-item:last-child {
+  border-bottom: none;
+}
+.csv-item-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.csv-item-name {
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.csv-item-amount {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* ---------- settings export grid ---------- */
+.settings-export-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 4px;
+}
+.settings-export-grid button {
+  justify-content: flex-start;
+  gap: 8px;
 }
 
 /* ---------- inputs / selects ---------- */
