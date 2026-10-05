@@ -2160,3 +2160,436 @@ html.is-theme-switching * {
   font-weight: 600;
 }
 /* ===== END: ONBOARDING + WHAT'S NEW INFO ICON ============================ */
+
+/* ==========================================================================
+   CATCHLY BEST OFFER — TWO PILLARS & BEST OFFER VIEW
+   Strictly following DESIGN-SYSTEM.md tokens & 4px grid
+   ========================================================================== */
+
+.pillar-wrap {
+  padding: 8px 16px 4px;
+  background: var(--canvas);
+}
+
+.pillar-nav {
+  display: flex;
+  background: var(--surface-2);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  gap: 4px;
+}
+
+.pillar-btn {
+  flex: 1;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--t-fast);
+}
+
+.pillar-btn:hover {
+  color: var(--ink);
+}
+
+.pillar-btn.active {
+  background: var(--canvas);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.pillar-live-badge {
+  background: var(--success);
+  color: #FFFFFF;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.pillar-sub-count {
+  background: var(--border);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+/* Best Offer Pillar View */
+.pillar-view {
+  display: none;
+  padding: 10px 16px 20px;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pillar-view.active {
+  display: flex;
+}
+
+/* Active Deal Card */
+.offer-deal-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.offer-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.offer-product-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  object-fit: contain;
+  background: #FFFFFF;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.offer-thumb-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.offer-card-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.offer-merchant-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface-2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.offer-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Pricing Hero inside Card */
+.offer-pricing-hero {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--canvas);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.offer-price-stack {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.offer-effective-price {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.offer-base-strike {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: line-through;
+  font-variant-numeric: tabular-nums;
+}
+
+.offer-savings-pill {
+  background: rgba(18, 183, 106, 0.12);
+  color: var(--success);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Applied Offers Checklist */
+.offer-perks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.offer-perk-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.offer-perk-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.offer-perk-check {
+  color: var(--success);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.offer-perk-right {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--success);
+  font-variant-numeric: tabular-nums;
+}
+
+.offer-code-pill {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  background: var(--surface-2);
+  border: 1px dashed var(--border-strong);
+  padding: 1px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 6px;
+}
+.offer-code-pill:hover {
+  background: var(--border);
+}
+
+/* Buy vs Wait Verdict Card */
+.offer-buywait-card {
+  padding: 9px 12px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.offer-buywait-card.deal-excellent,
+.offer-buywait-card.deal-good {
+  background: rgba(18, 183, 106, 0.10);
+  border: 1px solid rgba(18, 183, 106, 0.25);
+}
+
+.offer-buywait-card.deal-normal {
+  background: rgba(247, 144, 9, 0.10);
+  border: 1px solid rgba(247, 144, 9, 0.25);
+}
+
+.offer-buywait-card.deal-wait {
+  background: rgba(240, 68, 56, 0.10);
+  border: 1px solid rgba(240, 68, 56, 0.25);
+}
+
+.offer-verdict-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.offer-verdict-desc {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+/* History Stats Grid */
+.offer-history-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.offer-hist-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.offer-hist-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.offer-hist-val {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Action Buttons */
+.offer-card-ctas {
+  display: flex;
+  gap: 8px;
+}
+
+/* Catchly Savings Strip */
+.offer-savings-strip {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  gap: 8px;
+}
+
+.savings-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.savings-eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.savings-value {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.savings-status-pill {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--success);
+  margin-top: 2px;
+}
+
+/* Watchlist & Empty States */
+.offer-watchlist-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.offer-watchlist {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.watchlist-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  gap: 10px;
+}
+
+.watchlist-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.watchlist-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.watchlist-meta {
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.watchlist-price {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.empty-compact {
+  padding: 14px 12px;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.empty-compact-text {
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+

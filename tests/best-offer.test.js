@@ -1,0 +1,150 @@
+// tests/best-offer.test.js
+// Node.js test suite for Catchly Best Offer Engine (Product Detector, Offer Engine, Buy/Wait, Confidence)
+
+import assert from 'node:assert';
+import {
+  normalizeTitle, normalizeBrand, normalizeStorage, normalizeColor,
+  generateCanonicalProductId
+} from '../lib/product-detector.js';
+
+import {
+  calculateBestOffer, evaluateBuyVsWait, generateRecommendationReasons
+} from '../lib/offer-engine.js';
+
+console.log('🧪 Running Best Offer Engine Test Suite...\n');
+
+// 1. Normalization Tests
+console.log('1. Testing Product Normalization...');
+{
+  const rawTitle = 'Apple iPhone 17 Pro Max 256GB Natural Titanium - Buy Online at Best Price in India - Amazon.in';
+  const cleanTitle = normalizeTitle(rawTitle);
+  assert.strictEqual(cleanTitle, 'Apple iPhone 17 Pro Max 256GB Natural Titanium');
+
+  const brand = normalizeBrand('Apple Inc.', cleanTitle);
+  assert.strictEqual(brand, 'Apple');
+
+  const storage = normalizeStorage(cleanTitle);
+  assert.strictEqual(storage, '256GB');
+
+  const color = normalizeColor(cleanTitle);
+  assert.strictEqual(color, 'Natural Titanium');
+
+  const pid = generateCanonicalProductId({
+    brand,
+    title: cleanTitle,
+    asin: 'B0CHX1W1XY'
+  });
+  assert.strictEqual(pid, 'asin:B0CHX1W1XY');
+
+  const gtinPid = generateCanonicalProductId({
+    brand: 'Sony',
+    title: 'Sony WH-1000XM6 Headphones',
+    gtin: '4548736132456'
+  });
+  assert.strictEqual(gtinPid, 'gtin:4548736132456');
+
+  const fallbackPid = generateCanonicalProductId({
+    brand: 'Sony',
+    title: 'Sony WH-1000XM6 Wireless Headphones Black'
+  });
+  assert(fallbackPid.startsWith('norm:sony-wh-1000xm6'));
+  console.log('   ✓ Normalization tests passed.');
+}
+
+// 2. Offer Calculation & Effective Price Tests
+console.log('\n2. Testing Offer Calculation (Guaranteed vs Potential Savings)...');
+{
+  const product = {
+    price: 49999,
+    originalPrice: 54999,
+    currency: 'INR',
+    title: 'Sony WH-1000XM6'
+  };
+
+  const extractedOffers = {
+    offers: [
+      { type: 'coupon', title: '₹2,000 Clip Coupon', amount: 2000, tier: 'guaranteed' },
+      { type: 'bank_discount', title: 'SBI Card Offer', amount: 1500, tier: 'conditional' },
+      { type: 'cashback', title: 'Amazon Pay Cashback', amount: 1000, tier: 'potential' }
+    ],
+    shipping: { fee: 0, isFree: true }
+  };
+
+  const result = calculateBestOffer(product, extractedOffers);
+
+  // Guaranteed savings should only be coupon (₹2,000)
+  assert.strictEqual(result.guaranteedSavings, 2000);
+  assert.strictEqual(result.conditionalSavings, 1500);
+  assert.strictEqual(result.potentialSavings, 1000);
+  assert.strictEqual(result.totalSavings, 4500);
+
+  // Guaranteed Effective Price: 49,999 - 2,000 = 47,999
+  assert.strictEqual(result.guaranteedEffectivePrice, 47999);
+
+  // Potential Effective Price: 49,999 - 4,500 = 45,499
+  assert.strictEqual(result.potentialEffectivePrice, 45499);
+
+  assert(result.confidence >= 0.90);
+  console.log('   ✓ Offer calculations & tier separations passed.');
+}
+
+// 3. Buy vs. Wait Statistical Engine Tests
+console.log('\n3. Testing Buy vs. Wait Statistical Engine...');
+{
+  const priceHistory = [
+    { price: 32000, timestamp: Date.now() - 20 * 86400000 },
+    { price: 31500, timestamp: Date.now() - 10 * 86400000 },
+    { price: 31000, timestamp: Date.now() - 5 * 86400000 }
+  ]; // avg ~ 31500
+
+  // Case A: Price is 27,999 (11.1% discount) -> Excellent Deal
+  const excellent = evaluateBuyVsWait(27999, priceHistory);
+  assert.strictEqual(excellent.verdict, 'excellent');
+  assert(excellent.discountFromAvgPct >= 10);
+  assert.strictEqual(excellent.badgeClass, 'deal-excellent');
+
+  // Case B: Price is 29,500 (6.3% discount) -> Good Deal
+  const good = evaluateBuyVsWait(29500, priceHistory);
+  assert.strictEqual(good.verdict, 'good');
+  assert.strictEqual(good.badgeClass, 'deal-good');
+
+  // Case C: Price is 31,400 (normal range) -> Normal
+  const normal = evaluateBuyVsWait(31400, priceHistory);
+  assert.strictEqual(normal.verdict, 'normal');
+  assert.strictEqual(normal.badgeClass, 'deal-normal');
+
+  // Case D: Price is 34,999 (+11.1% hike) -> Wait
+  const wait = evaluateBuyVsWait(34999, priceHistory);
+  assert.strictEqual(wait.verdict, 'wait');
+  assert.strictEqual(wait.badgeClass, 'deal-wait');
+
+  console.log('   ✓ Buy vs. Wait statistical verdicts verified.');
+}
+
+// 4. Recommendation Explanations Tests
+console.log('\n4. Testing "Why Catchly Recommends This" Bullet Points...');
+{
+  const product = {
+    price: 27999,
+    originalPrice: 32999,
+    availability: 'in_stock'
+  };
+  const bestOffer = {
+    bestBankOffer: { title: 'SBI Card Offer', amount: 1500 },
+    guaranteedSavings: 500,
+    shippingFee: 0
+  };
+  const buyWait = {
+    discountFromAvgPct: 11
+  };
+
+  const reasons = generateRecommendationReasons(product, bestOffer, buyWait);
+  assert(reasons.length >= 3);
+  assert(reasons.some(r => r.includes('SBI Card Offer')));
+  assert(reasons.some(r => r.includes('coupon available')));
+  assert(reasons.some(r => r.includes('Free delivery')));
+  console.log('   ✓ Recommendation reasons verified:');
+  reasons.forEach(r => console.log('     • ' + r));
+}
+
+console.log('\n🎉 ALL BEST OFFER ENGINE TESTS PASSED SUCCESSFULLY!\n');

@@ -6,6 +6,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
+    "test": "node tests/best-offer.test.js",
     "test:smoke": "playwright test",
     "test:smoke:headed": "playwright test --headed",
     "test:smoke:report": "playwright show-report qa/playwright-report"

@@ -231,7 +231,378 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .catchly-toast {
+  .catchly-toast, .catchly-offer-card, .catchly-offer-pill {
     transition: none !important;
   }
 }
+
+/* ==========================================================================
+   Catchly Best Offer In-Page Widget & Floating Card
+   Strictly following DESIGN-SYSTEM.md tokens & 4px grid
+   ========================================================================== */
+
+.catchly-offer-widget {
+  --o-canvas:        #FFFFFF;
+  --o-surface:       #F8F9FA;
+  --o-surface-2:     #F1F3F5;
+  --o-border:        #E3E8EF;
+  --o-border-strong: #CDD5DF;
+  --o-ink:           #0A1628;
+  --o-muted:         #6B7689;
+  --o-primary:       #1B5BFF;
+  --o-primary-hover: #0F47D9;
+  --o-accent:        #F5D547;
+  --o-success:       #12B76A;
+  --o-success-bg:    rgba(18, 183, 106, 0.10);
+  --o-warning:       #F79009;
+  --o-warning-bg:    rgba(247, 144, 9, 0.10);
+  --o-danger:        #F04438;
+  --o-danger-bg:     rgba(240, 68, 56, 0.10);
+
+  position: fixed !important;
+  right: 20px !important;
+  bottom: 20px !important;
+  z-index: 2147483640 !important;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+  color: var(--o-ink) !important;
+  pointer-events: auto !important;
+  -webkit-font-smoothing: antialiased !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .catchly-offer-widget {
+    --o-canvas:        #090E17;
+    --o-surface:       #0F1726;
+    --o-surface-2:     #162136;
+    --o-border:        #1E2B42;
+    --o-border-strong: #2B3D5D;
+    --o-ink:           #F8FAFC;
+    --o-muted:         #8896AB;
+    --o-primary:       #3875FF;
+    --o-primary-hover: #5A8DFF;
+    --o-success:       #32D583;
+    --o-success-bg:    rgba(50, 213, 131, 0.14);
+    --o-warning:       #FDB022;
+    --o-warning-bg:    rgba(253, 176, 34, 0.14);
+    --o-danger:        #F97066;
+    --o-danger-bg:     rgba(249, 112, 102, 0.14);
+  }
+}
+
+.catchly-offer-widget[data-theme="dark"] {
+  --o-canvas:        #090E17 !important;
+  --o-surface:       #0F1726 !important;
+  --o-surface-2:     #162136 !important;
+  --o-border:        #1E2B42 !important;
+  --o-border-strong: #2B3D5D !important;
+  --o-ink:           #F8FAFC !important;
+  --o-muted:         #8896AB !important;
+  --o-primary:       #3875FF !important;
+  --o-primary-hover: #5A8DFF !important;
+}
+
+.catchly-offer-widget[data-theme="utility"] {
+  --o-canvas:        #FAF7F2 !important;
+  --o-surface:       #FFFFFF !important;
+  --o-surface-2:     #F2EDE3 !important;
+  --o-border:        #E5DFD3 !important;
+  --o-border-strong: #C9C0AE !important;
+  --o-ink:           #15110C !important;
+  --o-muted:         #6E6557 !important;
+  --o-primary:       #15110C !important;
+  --o-primary-hover: #2E251B !important;
+}
+
+/* Floating Pill (Collapsed) */
+.catchly-offer-pill {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 12px 8px 10px !important;
+  background: var(--o-canvas) !important;
+  border: 1px solid var(--o-border-strong) !important;
+  border-radius: 999px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.08) !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  transition: transform 140ms ease-out, box-shadow 140ms ease-out !important;
+}
+.catchly-offer-pill:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18) !important;
+}
+
+.catchly-pill-logo {
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 4px !important;
+  display: block !important;
+}
+
+.catchly-pill-tag {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  color: var(--o-muted) !important;
+}
+
+.catchly-pill-price {
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  color: var(--o-ink) !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.catchly-pill-save {
+  background: var(--o-success-bg) !important;
+  color: var(--o-success) !important;
+  font-weight: 600 !important;
+  font-size: 11px !important;
+  padding: 2px 7px !important;
+  border-radius: 999px !important;
+}
+
+.catchly-pill-close {
+  background: transparent !important;
+  border: none !important;
+  color: var(--o-muted) !important;
+  cursor: pointer !important;
+  padding: 2px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-left: 2px !important;
+}
+.catchly-pill-close:hover {
+  color: var(--o-ink) !important;
+  background: var(--o-surface-2) !important;
+}
+
+/* Expanded Card */
+.catchly-offer-card {
+  width: 330px !important;
+  max-width: calc(100vw - 32px) !important;
+  background: var(--o-canvas) !important;
+  border: 1px solid var(--o-border) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16), 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  transform: translateY(8px) !important;
+  transition: opacity 180ms ease-out, transform 180ms ease-out !important;
+}
+.catchly-offer-card.catchly-in {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+.catchly-card-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 10px 14px !important;
+  background: var(--o-surface) !important;
+  border-bottom: 1px solid var(--o-border) !important;
+}
+
+.catchly-card-brand {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--o-ink) !important;
+}
+
+.catchly-card-merchant-badge {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  background: var(--o-surface-2) !important;
+  color: var(--o-muted) !important;
+}
+
+.catchly-card-close {
+  background: transparent !important;
+  border: none !important;
+  color: var(--o-muted) !important;
+  cursor: pointer !important;
+  width: 22px !important;
+  height: 22px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 4px !important;
+}
+.catchly-card-close:hover {
+  background: var(--o-surface-2) !important;
+  color: var(--o-ink) !important;
+}
+
+.catchly-card-body {
+  padding: 14px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+.catchly-product-title {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--o-muted) !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  line-height: 1.35 !important;
+}
+
+/* Pricing Hero */
+.catchly-price-hero {
+  display: flex !important;
+  align-items: baseline !important;
+  justify-content: space-between !important;
+  padding: 8px 10px !important;
+  background: var(--o-surface) !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--o-border) !important;
+}
+
+.catchly-effective-price {
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  color: var(--o-ink) !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.catchly-base-strike {
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace !important;
+  font-size: 12px !important;
+  text-decoration: line-through !important;
+  color: var(--o-muted) !important;
+  margin-left: 6px !important;
+}
+
+.catchly-savings-chip {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: var(--o-success) !important;
+  background: var(--o-success-bg) !important;
+  padding: 3px 8px !important;
+  border-radius: 999px !important;
+}
+
+/* Offer Breakdown */
+.catchly-offer-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+.catchly-offer-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  font-size: 11.5px !important;
+  color: var(--o-ink) !important;
+}
+
+.catchly-offer-item-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.catchly-check-icon {
+  color: var(--o-success) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+.catchly-offer-item-right {
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: var(--o-success) !important;
+}
+
+/* Buy/Wait Verdict */
+.catchly-verdict-box {
+  padding: 8px 10px !important;
+  border-radius: 6px !important;
+  font-size: 11px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+.catchly-verdict-box.deal-excellent,
+.catchly-verdict-box.deal-good {
+  background: var(--o-success-bg) !important;
+  color: var(--o-success) !important;
+  border: 1px solid rgba(18, 183, 106, 0.25) !important;
+}
+.catchly-verdict-box.deal-normal {
+  background: var(--o-warning-bg) !important;
+  color: var(--o-warning) !important;
+  border: 1px solid rgba(247, 144, 9, 0.25) !important;
+}
+.catchly-verdict-box.deal-wait {
+  background: var(--o-danger-bg) !important;
+  color: var(--o-danger) !important;
+  border: 1px solid rgba(240, 68, 56, 0.25) !important;
+}
+
+/* Action CTA */
+.catchly-card-actions {
+  display: flex !important;
+  gap: 8px !important;
+}
+
+.catchly-cta-btn {
+  flex: 1 !important;
+  height: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  border-radius: 6px !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: transform 80ms ease, opacity 120ms ease !important;
+}
+.catchly-cta-btn:active {
+  transform: scale(0.97) !important;
+}
+
+.catchly-cta-primary {
+  background: var(--o-primary) !important;
+  color: #FFFFFF !important;
+}
+.catchly-cta-primary:hover {
+  background: var(--o-primary-hover) !important;
+}
+
+.catchly-cta-secondary {
+  background: var(--o-surface-2) !important;
+  color: var(--o-ink) !important;
+  border: 1px solid var(--o-border) !important;
+}
+.catchly-cta-secondary:hover {
+  background: var(--o-surface) !important;
+}
+
+.catchly-card-foot {
+  font-size: 10px !important;
+  color: var(--o-muted) !important;
+  text-align: center !important;
+  padding-top: 2px !important;
+}
+

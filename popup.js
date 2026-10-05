@@ -27,7 +27,9 @@ import {
   getEvents, seedSampleData, getUsage, logEvent,
   checkAndRecordPriceChange,
   getUiState, setUiState,
-  parseStatementCsv
+  parseStatementCsv,
+  getActiveOffer, getProductPriceHistory, getSavingsSummary,
+  recordSavingsEvent, getWatchlist, addToWatchlist, removeFromWatchlist
 } from './lib/storage.js';
 import { SERVICES, listServices } from './lib/merchants.js';
 import {
@@ -59,7 +61,11 @@ const state = {
   sort: 'renewal',
   calCursor: new Date(),
   events: [],
-  ui: { activeCollapsed: false, inactiveCollapsed: true } // Change 2
+  ui: { activeCollapsed: false, inactiveCollapsed: true }, // Change 2
+  pillar: 'offers',
+  activeOffer: null,
+  savings: { totalSaved: 0, dealCount: 0 },
+  watchlist: []
 };
 
 // ----------------------------------------------------------------------------
@@ -72,6 +78,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Idempotent — no-op after the first call. (Part B)
   await markFirstUseIfUnset();
   await refresh();
+  wirePillars();
   wireHeader();
   wireTabs();
   wireListTools();
@@ -84,6 +91,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await renderPendingCaptures();
   // Day-7 fallback banner — gated by shouldShowWaitlistPrompt. (Part B5)
   await maybeShowFallbackBanner();
+  await refreshBestOffer();
 });
 
 // Apply stored theme as early as possible to avoid flash.
@@ -102,6 +110,330 @@ function setThemeAttr(theme) {
   const valid = { system: 1, editorial: 1, utility: 1, dark: 1 };
   const next = valid[theme] ? theme : 'system';
   document.documentElement.setAttribute('data-theme', next);
+}
+
+// ----------------------------------------------------------------------------
+// CATCHLY TWO PILLARS & BEST OFFER ENGINE
+// Master Plan: 🛍️ BEST OFFER (Primary) & 🔄 SUBSCRIPTIONS (Secondary)
+// ----------------------------------------------------------------------------
+function wirePillars() {
+  const btnOffers = document.getElementById('pillar-offers');
+  const btnSubs = document.getElementById('pillar-subs');
+  const viewOffers = document.getElementById('pillar-offers-view');
+  const viewSubsSummary = document.getElementById('summary');
+  const viewSubsPanes = document.getElementById('subs-pane-host');
+  const viewSubsTabs = document.getElementById('subs-bottom-tabs');
+  const btnAdd = document.getElementById('btn-add');
+  const btnCal = document.getElementById('btn-calendar');
+
+  const switchPillar = (pillar) => {
+    state.pillar = pillar;
+    btnOffers?.classList.toggle('active', pillar === 'offers');
+    btnSubs?.classList.toggle('active', pillar === 'subs');
+
+    if (pillar === 'offers') {
+      viewOffers?.classList.add('active');
+      viewOffers?.classList.remove('hidden');
+      viewSubsSummary?.classList.add('hidden');
+      viewSubsPanes?.classList.add('hidden');
+      viewSubsTabs?.classList.add('hidden');
+      if (btnAdd) btnAdd.style.display = 'none';
+      if (btnCal) btnCal.style.display = 'none';
+      refreshBestOffer();
+    } else {
+      viewOffers?.classList.remove('active');
+      viewOffers?.classList.add('hidden');
+      viewSubsSummary?.classList.remove('hidden');
+      viewSubsPanes?.classList.remove('hidden');
+      viewSubsTabs?.classList.remove('hidden');
+      if (btnAdd) btnAdd.style.display = '';
+      if (btnCal) btnCal.style.display = '';
+      refresh();
+    }
+  };
+
+  btnOffers?.addEventListener('click', () => switchPillar('offers'));
+  btnSubs?.addEventListener('click', () => switchPillar('subs'));
+
+  // Default to offers pillar as Primary
+  switchPillar('offers');
+}
+
+async function refreshBestOffer() {
+  // 1. Get savings & watchlist
+  const savings = await getSavingsSummary();
+  const watchlist = await getWatchlist();
+  state.savings = savings;
+  state.watchlist = watchlist;
+
+  // Update subscription count badge on Pillar
+  try {
+    const subs = await getAllSubs({ autoRollover: false });
+    const activeSubs = subs.filter(s => s.status === 'active');
+    const subCountBadge = document.getElementById('pillar-sub-count');
+    if (subCountBadge) subCountBadge.innerText = activeSubs.length;
+  } catch {}
+
+  // 2. Fetch active offer
+  let activeOffer = await getActiveOffer();
+  state.activeOffer = activeOffer;
+
+  renderSavingsMetrics();
+  renderWatchlist();
+  await renderActiveOfferCard();
+}
+
+function renderSavingsMetrics() {
+  const totalSavedEl = document.getElementById('stat-total-saved');
+  const dealsCaughtEl = document.getElementById('stat-deals-caught');
+  const cur = state.settings?.currency || 'INR';
+
+  if (totalSavedEl) {
+    totalSavedEl.innerText = fmtMoney(state.savings?.totalSaved || 0, cur);
+  }
+  if (dealsCaughtEl) {
+    dealsCaughtEl.innerText = state.savings?.dealCount || 0;
+  }
+}
+
+async function renderActiveOfferCard() {
+  const mount = document.getElementById('offer-card-mount');
+  const liveBadge = document.getElementById('pillar-live-badge');
+  if (!mount) return;
+
+  const data = state.activeOffer;
+  if (!data || !data.product) {
+    if (liveBadge) liveBadge.classList.add('hidden');
+    mount.innerHTML = `
+      <div class="offer-deal-card" style="text-align: center; padding: 22px 14px;">
+        <div style="font-size: 28px; margin-bottom: 8px;">🛍️</div>
+        <div style="font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 4px;">Catch the Best Offer</div>
+        <div style="font-size: 12px; color: var(--muted); line-height: 1.45; max-width: 280px; margin: 0 auto 14px;">
+          Open any product on Amazon, Flipkart, Myntra, or Croma. Catchly will scan for instant coupons, bank card discounts, and Buy vs. Wait price intelligence.
+        </div>
+        <div style="display: flex; justify-content: center; gap: 6px;">
+          <span class="offer-merchant-tag">Amazon</span>
+          <span class="offer-merchant-tag">Flipkart</span>
+          <span class="offer-merchant-tag">Croma</span>
+          <span class="offer-merchant-tag">Myntra</span>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  if (liveBadge) liveBadge.classList.remove('hidden');
+
+  const { product, bestOffer } = data;
+  const cur = product.currency || 'INR';
+  const effectivePrice = bestOffer.potentialEffectivePrice || product.price;
+  const basePrice = product.price;
+  const totalSavings = bestOffer.totalSavings || 0;
+
+  // Fetch local price history for Buy/Wait calculation
+  const history = await getProductPriceHistory(product.canonicalProductId);
+  let buyWait = {
+    verdict: 'good',
+    label: '🟢 Good Time to Buy',
+    badgeClass: 'deal-good',
+    summary: totalSavings > 0 ? `Price is discounted with verified page offers` : 'Best verified current price',
+    lowest: basePrice,
+    avg: basePrice,
+    highest: basePrice
+  };
+
+  if (history && history.length >= 2) {
+    const prices = history.map(h => h.effectivePrice || h.price).filter(p => p > 0);
+    const sum = prices.reduce((a, b) => a + b, 0);
+    const avg = Math.round(sum / prices.length);
+    const lowest = Math.min(...prices);
+    const highest = Math.max(...prices);
+    const diffPct = Math.round(((avg - effectivePrice) / avg) * 100);
+
+    if (diffPct >= 10) {
+      buyWait = {
+        verdict: 'excellent',
+        label: '🟢 Excellent Deal',
+        badgeClass: 'deal-excellent',
+        summary: `Price is ${diffPct}% below recent average`,
+        lowest, avg, highest
+      };
+    } else if (diffPct <= -5) {
+      buyWait = {
+        verdict: 'wait',
+        label: '🔴 I\'d Wait',
+        badgeClass: 'deal-wait',
+        summary: `Price is ${Math.abs(diffPct)}% higher than recent average`,
+        lowest, avg, highest
+      };
+    } else {
+      buyWait = {
+        verdict: 'normal',
+        label: '🟡 Normal Price',
+        badgeClass: 'deal-normal',
+        summary: `Within typical price range`,
+        lowest, avg, highest
+      };
+    }
+  }
+
+  const thumbHtml = product.image
+    ? `<img class="offer-product-thumb" src="${esc(product.image)}" alt="" />`
+    : `<div class="offer-thumb-placeholder">🛍️</div>`;
+
+  mount.innerHTML = `
+    <div class="offer-deal-card">
+      <div class="offer-card-top">
+        ${thumbHtml}
+        <div class="offer-card-meta">
+          <span class="offer-merchant-tag">${esc(product.merchant || 'Store')}</span>
+          <div class="offer-title" title="${esc(product.title)}">${esc(product.title)}</div>
+        </div>
+      </div>
+
+      <div class="offer-pricing-hero">
+        <div class="offer-price-stack">
+          <span class="offer-effective-price">${fmtMoney(effectivePrice, cur)}</span>
+          ${totalSavings > 0 ? `<span class="offer-base-strike">${fmtMoney(basePrice, cur)}</span>` : ''}
+        </div>
+        ${totalSavings > 0 ? `<span class="offer-savings-pill">Save ${fmtMoney(totalSavings, cur)}</span>` : ''}
+      </div>
+
+      <div class="offer-perks-list">
+        ${bestOffer.appliedOffers?.map(o => `
+          <div class="offer-perk-row">
+            <div class="offer-perk-left">
+              <span class="offer-perk-check">✓</span>
+              <span>${esc(o.title)}</span>
+              ${o.code ? `<span class="offer-code-pill" data-copy="${esc(o.code)}" title="Click to copy code">${esc(o.code)}</span>` : ''}
+            </div>
+            <div class="offer-perk-right">-${fmtMoney(o.amount, cur)}</div>
+          </div>
+        `).join('') || ''}
+        ${bestOffer.isFreeDelivery ? `
+          <div class="offer-perk-row">
+            <div class="offer-perk-left">
+              <span class="offer-perk-check">✓</span>
+              <span>Free Delivery</span>
+            </div>
+            <div class="offer-perk-right" style="color:var(--muted);">Included</div>
+          </div>
+        ` : ''}
+      </div>
+
+      <div class="offer-buywait-card ${buyWait.badgeClass}">
+        <div class="offer-verdict-title">${buyWait.label}</div>
+        <div class="offer-verdict-desc">${esc(buyWait.summary)}</div>
+        <div class="offer-history-grid">
+          <div class="offer-hist-item">
+            <span class="offer-hist-label">lowest</span>
+            <span class="offer-hist-val">${fmtMoney(buyWait.lowest, cur)}</span>
+          </div>
+          <div class="offer-hist-item">
+            <span class="offer-hist-label">average</span>
+            <span class="offer-hist-val">${fmtMoney(buyWait.avg, cur)}</span>
+          </div>
+          <div class="offer-hist-item">
+            <span class="offer-hist-label">highest</span>
+            <span class="offer-hist-val">${fmtMoney(buyWait.highest, cur)}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="offer-card-ctas">
+        <button type="button" class="btn btn-primary" id="btn-confirm-savings" style="flex:1;">
+          ✓ Confirm ₹ Deal
+        </button>
+        <button type="button" class="btn btn-ghost" id="btn-track-price" style="flex:1;">
+          🔔 Track Price
+        </button>
+      </div>
+    </div>
+  `;
+
+  // Attach event handlers
+  mount.querySelector('#btn-confirm-savings')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    btn.innerText = 'Saved to Stats!';
+    btn.style.pointerEvents = 'none';
+    await recordSavingsEvent({
+      productId: product.canonicalProductId,
+      title: product.title,
+      merchant: product.merchant,
+      originalPrice: product.price,
+      finalPrice: effectivePrice,
+      savings: totalSavings,
+      currency: cur
+    });
+    const s = await getSavingsSummary();
+    state.savings = s;
+    renderSavingsMetrics();
+  });
+
+  mount.querySelector('#btn-track-price')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    btn.innerText = '✓ Tracking';
+    btn.style.pointerEvents = 'none';
+    const list = await addToWatchlist({
+      ...product,
+      effectivePrice
+    });
+    state.watchlist = list;
+    renderWatchlist();
+  });
+
+  mount.querySelectorAll('.offer-code-pill').forEach(pill => {
+    pill.addEventListener('click', (e) => {
+      const code = e.currentTarget.getAttribute('data-copy');
+      if (code) {
+        navigator.clipboard.writeText(code);
+        const old = e.currentTarget.innerText;
+        e.currentTarget.innerText = 'Copied!';
+        setTimeout(() => { e.currentTarget.innerText = old; }, 1500);
+      }
+    });
+  });
+}
+
+function renderWatchlist() {
+  const ul = document.getElementById('offer-watchlist');
+  const empty = document.getElementById('watchlist-empty');
+  if (!ul) return;
+
+  const items = state.watchlist || [];
+  if (!items.length) {
+    ul.innerHTML = '';
+    empty?.classList.remove('hidden');
+    return;
+  }
+
+  empty?.classList.add('hidden');
+  ul.innerHTML = items.map(item => `
+    <li class="watchlist-item">
+      <div class="watchlist-info">
+        <div class="watchlist-title" title="${esc(item.title)}">${esc(item.title)}</div>
+        <div class="watchlist-meta">
+          <span>${esc(item.merchant || 'Store')}</span>
+          <span>&bull;</span>
+          <span class="watchlist-price">${fmtMoney(item.effectivePrice || item.price, item.currency || 'INR')}</span>
+        </div>
+      </div>
+      <button class="icon-btn btn-del-watch" data-remove-watch="${esc(item.canonicalProductId)}" title="Stop tracking" aria-label="Stop tracking">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </li>
+  `).join('');
+
+  ul.querySelectorAll('.btn-del-watch').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const pid = e.currentTarget.getAttribute('data-remove-watch');
+      if (pid) {
+        const list = await removeFromWatchlist(pid);
+        state.watchlist = list;
+        renderWatchlist();
+      }
+    });
+  });
 }
 
 function wireKeyboard() {

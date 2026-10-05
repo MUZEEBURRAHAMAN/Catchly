@@ -16,6 +16,8 @@
       if (__VALID_THEMES[t]) __currentTheme = t;
       const open = __shadow?.getElementById('__catchly_toast');
       if (open) open.setAttribute('data-theme', __currentTheme);
+      const offerEl = __shadow?.getElementById('__catchly_offer_widget');
+      if (offerEl) offerEl.setAttribute('data-theme', __currentTheme);
     });
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area === 'local' && changes.settings_v1?.newValue?.theme) {
@@ -24,6 +26,8 @@
           __currentTheme = t;
           const open = __shadow?.getElementById('__catchly_toast');
           if (open) open.setAttribute('data-theme', __currentTheme);
+          const offerEl = __shadow?.getElementById('__catchly_offer_widget');
+          if (offerEl) offerEl.setAttribute('data-theme', __currentTheme);
         }
       }
     });
@@ -35,6 +39,8 @@
         __currentTheme = msg.theme;
         const open = __shadow?.getElementById('__catchly_toast');
         if (open) open.setAttribute('data-theme', __currentTheme);
+        const offerEl = __shadow?.getElementById('__catchly_offer_widget');
+        if (offerEl) offerEl.setAttribute('data-theme', __currentTheme);
       }
     });
   } catch {}
@@ -297,6 +303,476 @@
     });
   }
 
+  // ==========================================================================
+  // CATCHLY BEST OFFER ENGINE (IN-PAGE CLIENT)
+  // 100% on-device, local-first. Master Plan §2, §3, §7, §8, §10, §24
+  // ==========================================================================
+
+  let __hasTriggeredOffer = false;
+
+  function fmtCurrency(val, cur = 'INR') {
+    const symbols = { USD: '$', EUR: '€', GBP: '£', INR: '₹', CAD: 'CA$', AUD: 'A$', JPY: '¥' };
+    const sym = symbols[cur] || cur + ' ';
+    return `${sym}${Math.round(val).toLocaleString()}`;
+  }
+
+  function detectInPageProduct() {
+    const host = location.hostname.toLowerCase().replace(/^www\./, '');
+    const href = location.href;
+
+    // --- Amazon Adapter ---
+    if (host.includes('amazon.')) {
+      const titleEl = document.getElementById('productTitle') || document.getElementById('title');
+      if (titleEl) {
+        const rawTitle = titleEl.innerText.trim();
+        let price = null;
+        let originalPrice = null;
+
+        const priceWhole = document.querySelector('.priceToPay .a-price-whole, #corePriceDisplay_desktop_feature_div .a-price-whole, #corePrice_desktop .a-price-whole');
+        const priceFraction = document.querySelector('.priceToPay .a-price-fraction, #corePriceDisplay_desktop_feature_div .a-price-fraction');
+        if (priceWhole) {
+          const w = priceWhole.innerText.replace(/[^0-9]/g, '');
+          const f = priceFraction ? priceFraction.innerText.replace(/[^0-9]/g, '') : '00';
+          price = parseFloat(`${w}.${f}`);
+        }
+        if (!price || isNaN(price)) {
+          const off = document.querySelector('#corePrice_desktop .a-offscreen, #priceblock_ourprice, #priceblock_dealprice, .a-price .a-offscreen');
+          if (off) price = parseFloat(off.innerText.replace(/[^0-9.]/g, ''));
+        }
+
+        const mrpEl = document.querySelector('.basisPrice .a-offscreen, #corePriceDisplay_desktop_feature_div .a-text-price .a-offscreen, #basis-price');
+        if (mrpEl) {
+          const m = parseFloat(mrpEl.innerText.replace(/[^0-9.]/g, ''));
+          if (!isNaN(m) && m > (price || 0)) originalPrice = m;
+        }
+
+        let asin = null;
+        const asinInput = document.getElementById('ASIN');
+        if (asinInput && asinInput.value) asin = asinInput.value.trim();
+        else {
+          const m = href.match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})/i);
+          if (m) asin = m[1];
+        }
+
+        let brand = 'Unknown';
+        const byline = document.getElementById('bylineInfo');
+        if (byline) brand = byline.innerText.replace(/^Brand:\s*|^Visit the\s*|\s*Store$/gi, '').trim();
+
+        const imgEl = document.getElementById('landingImage') || document.getElementById('imgBlkFront');
+        const image = imgEl ? (imgEl.getAttribute('data-old-hires') || imgEl.getAttribute('src')) : null;
+        const currency = host.endsWith('.in') ? 'INR' : host.endsWith('.co.uk') ? 'GBP' : 'USD';
+
+        if (price && !isNaN(price)) {
+          return {
+            title: rawTitle.replace(/\s*[-|–]\s*Amazon.*$/i, '').trim(),
+            rawTitle,
+            brand: brand || 'Store',
+            price,
+            originalPrice,
+            currency,
+            image,
+            asin,
+            sku: asin,
+            canonicalProductId: asin ? `asin:${asin}` : `amazon:${rawTitle.slice(0, 30)}`,
+            merchant: 'Amazon',
+            merchantKey: 'amazon',
+            url: href
+          };
+        }
+      }
+    }
+
+    // --- Flipkart Adapter ---
+    if (host.includes('flipkart.com')) {
+      const titleEl = document.querySelector('span.B_NuCI, h1.VU-ZEz, h1.title-blade');
+      if (titleEl) {
+        const rawTitle = titleEl.innerText.trim();
+        let price = null;
+        let originalPrice = null;
+
+        const pEl = document.querySelector('div._30jeq3._16Jk6d, div.Nx9bqj.CxhGGd, div._30jeq3');
+        if (pEl) price = parseFloat(pEl.innerText.replace(/[^0-9.]/g, ''));
+
+        const mEl = document.querySelector('div._3I9_wc._2p6lqe, div.yRaY8j.A6\\+E6v');
+        if (mEl) {
+          const m = parseFloat(mEl.innerText.replace(/[^0-9.]/g, ''));
+          if (!isNaN(m) && m > (price || 0)) originalPrice = m;
+        }
+
+        const brandEl = document.querySelector('span.G6XhRU');
+        const brand = brandEl ? brandEl.innerText.trim() : 'Store';
+        const imgEl = document.querySelector('img._396cs4._2amPTt, img.DByuf4');
+        const image = imgEl ? imgEl.getAttribute('src') : null;
+
+        const urlObj = new URL(href);
+        const pid = urlObj.searchParams.get('pid') || null;
+
+        if (price && !isNaN(price)) {
+          return {
+            title: rawTitle.replace(/\s*[-|–]\s*Flipkart.*$/i, '').trim(),
+            rawTitle,
+            brand,
+            price,
+            originalPrice,
+            currency: 'INR',
+            image,
+            sku: pid,
+            canonicalProductId: pid ? `flipkart:${pid}` : `flipkart:${rawTitle.slice(0, 30)}`,
+            merchant: 'Flipkart',
+            merchantKey: 'flipkart',
+            url: href
+          };
+        }
+      }
+    }
+
+    // --- JSON-LD fallback for generic e-commerce sites ---
+    const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+    for (const s of scripts) {
+      try {
+        const parsed = JSON.parse(s.textContent || '{}');
+        const items = Array.isArray(parsed) ? parsed : (parsed['@graph'] || [parsed]);
+        for (const item of items) {
+          if (!item) continue;
+          const type = String(item['@type'] || '');
+          if (type === 'Product' || type.endsWith('/Product')) {
+            const name = item.name || '';
+            const rawOffers = item.offers;
+            const offer = Array.isArray(rawOffers) ? rawOffers[0] : rawOffers;
+            if (offer && (offer.price || offer.lowPrice)) {
+              const price = parseFloat(offer.price || offer.lowPrice);
+              const currency = offer.priceCurrency ? offer.priceCurrency.toUpperCase() : 'INR';
+              const image = Array.isArray(item.image) ? item.image[0] : (item.image?.url || item.image);
+              const brand = typeof item.brand === 'string' ? item.brand : (item.brand?.name || 'Store');
+              const gtin = item.gtin13 || item.gtin || item.sku || null;
+
+              if (name && price && !isNaN(price)) {
+                return {
+                  title: name,
+                  rawTitle: name,
+                  brand,
+                  price,
+                  originalPrice: null,
+                  currency,
+                  image,
+                  sku: item.sku || null,
+                  canonicalProductId: gtin ? `gtin:${gtin}` : `norm:${brand}-${name.slice(0, 25).replace(/[^a-z0-9]/gi, '')}`,
+                  merchant: host.split('.')[0].toUpperCase(),
+                  merchantKey: host.split('.')[0].toLowerCase(),
+                  url: href
+                };
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+
+    return null;
+  }
+
+  function detectInPageOffers(basePrice) {
+    const offers = [];
+
+    // Coupon detection
+    const azCoupon = document.getElementById('couponBadge') || document.querySelector('.couponBadge, #vpcButton, label[for*="coupon"]');
+    if (azCoupon) {
+      const text = azCoupon.innerText || '';
+      const m = text.match(/(?:Save|Apply|₹|\$)\s*([\d,]+(?:\.\d{1,2})?)\s*(?:coupon|voucher|off)/i);
+      const pctMatch = text.match(/(\d+)%\s*(?:coupon|voucher|off)/i);
+      if (m) {
+        const amt = parseFloat(m[1].replace(/,/g, ''));
+        if (amt > 0 && amt < basePrice) {
+          offers.push({ type: 'coupon', title: 'Clip Coupon', amount: amt, tier: 'guaranteed' });
+        }
+      } else if (pctMatch) {
+        const pct = parseInt(pctMatch[1], 10);
+        const amt = Math.round((basePrice * pct) / 100);
+        offers.push({ type: 'coupon', title: `${pct}% Clip Coupon`, amount: amt, tier: 'guaranteed' });
+      }
+    }
+
+    // Bank offers
+    const bodyText = (document.body && document.body.innerText) || '';
+    const bankMatches = bodyText.match(/(?:SBI|HDFC|ICICI|Axis|Kotak|Amex|Federal)\s*(?:Bank)?\s*(?:Credit|Debit)?\s*Card[^\n]{0,80}/gi) || [];
+    for (const raw of bankMatches.slice(0, 3)) {
+      const flat = raw.match(/(?:Flat\s*)?(?:₹|\$)\s*([\d,]+)\s*(?:Off|Discount)/i);
+      const pct = raw.match(/(\d+)%\s*(?:Instant\s*)?Discount/i);
+      let amt = 0;
+      if (flat) amt = parseFloat(flat[1].replace(/,/g, ''));
+      else if (pct) {
+        const p = parseInt(pct[1], 10);
+        amt = Math.min(Math.round((basePrice * p) / 100), 2000);
+      }
+      if (amt > 0 && amt < basePrice) {
+        const bankName = raw.split(/[\s,]/)[0].toUpperCase();
+        offers.push({
+          type: 'bank_discount',
+          title: `${bankName} Card Offer`,
+          amount: amt,
+          tier: 'conditional'
+        });
+        break; // Keep best bank offer
+      }
+    }
+
+    // Cashback
+    if (/amazon pay|flipkart axis/i.test(bodyText)) {
+      const cbAmt = Math.round(basePrice * 0.05);
+      if (cbAmt > 50 && cbAmt <= 1500) {
+        offers.push({ type: 'cashback', title: '5% Cashback', amount: cbAmt, tier: 'potential' });
+      }
+    }
+
+    // Free delivery check
+    const isFreeDelivery = /free\s+delivery|free\s+shipping/i.test(bodyText);
+
+    return {
+      offers,
+      isFreeDelivery
+    };
+  }
+
+  function renderBestOfferWidget({ product, bestOffer, buyWait }) {
+    const shadow = getShadowRoot();
+    const existing = shadow.getElementById('__catchly_offer_widget');
+    if (existing) existing.remove();
+
+    const root = document.createElement('div');
+    root.id = '__catchly_offer_widget';
+    root.className = 'catchly-offer-widget';
+    root.setAttribute('data-theme', __currentTheme);
+
+    const cur = product.currency || 'INR';
+    const effectiveStr = fmtCurrency(bestOffer.potentialEffectivePrice, cur);
+    const baseStr = fmtCurrency(product.price, cur);
+    const saveStr = bestOffer.totalSavings > 0 ? fmtCurrency(bestOffer.totalSavings, cur) : null;
+
+    // Render collapsed pill initially, expandable to full card
+    root.innerHTML = `
+      <!-- Collapsed Pill -->
+      <div class="catchly-offer-pill" id="__catchly_pill" title="Click to view Best Offer breakdown">
+        <img class="catchly-pill-logo" src="${chrome.runtime.getURL('icons/icon32.png')}" alt="" />
+        <span class="catchly-pill-tag">Best Offer</span>
+        <span class="catchly-pill-price">${effectiveStr}</span>
+        ${saveStr ? `<span class="catchly-pill-save">Save ${saveStr}</span>` : ''}
+        <button class="catchly-pill-close" data-offer-act="dismiss" aria-label="Dismiss">×</button>
+      </div>
+
+      <!-- Expanded Card -->
+      <div class="catchly-offer-card" id="__catchly_card" style="display:none;">
+        <header class="catchly-card-head">
+          <div class="catchly-card-brand">
+            <img src="${chrome.runtime.getURL('icons/icon32.png')}" width="16" height="16" alt="" style="border-radius:3px;" />
+            <span>Catchly Best Offer</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="catchly-card-merchant-badge">${escapeHtml(product.merchant || 'Store')}</span>
+            <button class="catchly-card-close" data-offer-act="collapse" aria-label="Collapse">▾</button>
+          </div>
+        </header>
+
+        <div class="catchly-card-body">
+          <div class="catchly-product-title">${escapeHtml(product.title)}</div>
+
+          <div class="catchly-price-hero">
+            <div>
+              <span class="catchly-effective-price">${effectiveStr}</span>
+              ${saveStr ? `<span class="catchly-base-strike">${baseStr}</span>` : ''}
+            </div>
+            ${saveStr ? `<span class="catchly-savings-chip">Save ${saveStr}</span>` : ''}
+          </div>
+
+          <div class="catchly-offer-list">
+            ${bestOffer.appliedOffers.map(o => `
+              <div class="catchly-offer-item">
+                <div class="catchly-offer-item-left">
+                  <span class="catchly-check-icon">✓</span>
+                  <span>${escapeHtml(o.title)}</span>
+                </div>
+                <div class="catchly-offer-item-right">-${fmtCurrency(o.amount, cur)}</div>
+              </div>
+            `).join('')}
+            ${bestOffer.isFreeDelivery ? `
+              <div class="catchly-offer-item">
+                <div class="catchly-offer-item-left">
+                  <span class="catchly-check-icon">✓</span>
+                  <span>Free Delivery</span>
+                </div>
+                <div class="catchly-offer-item-right" style="color:var(--o-muted);">Included</div>
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="catchly-verdict-box ${buyWait.badgeClass}">
+            <span>${buyWait.label}</span>
+            <span style="opacity:0.85;font-size:10.5px;">&bull; ${escapeHtml(buyWait.summary)}</span>
+          </div>
+
+          <div class="catchly-card-actions">
+            <button class="catchly-cta-btn catchly-cta-primary" data-offer-act="save-deal">
+              ✓ Save ₹ Deal
+            </button>
+            <button class="catchly-cta-btn catchly-cta-secondary" data-offer-act="track-price">
+              🔔 Track Price
+            </button>
+          </div>
+
+          <div class="catchly-card-foot">
+            Zero external data sent. 100% on-device local intelligence.
+          </div>
+        </div>
+      </div>
+    `;
+
+    shadow.appendChild(root);
+
+    const pill = root.querySelector('#__catchly_pill');
+    const card = root.querySelector('#__catchly_card');
+
+    pill.addEventListener('click', (e) => {
+      const act = e.target?.getAttribute('data-offer-act');
+      if (act === 'dismiss') {
+        root.remove();
+        return;
+      }
+      pill.style.display = 'none';
+      card.style.display = 'block';
+      requestAnimationFrame(() => card.classList.add('catchly-in'));
+    });
+
+    card.addEventListener('click', async (e) => {
+      const t = e.target;
+      const act = t?.getAttribute('data-offer-act');
+      if (act === 'collapse') {
+        card.classList.remove('catchly-in');
+        setTimeout(() => {
+          card.style.display = 'none';
+          pill.style.display = 'flex';
+        }, 150);
+      } else if (act === 'track-price') {
+        t.innerText = '✓ Tracking';
+        t.style.pointerEvents = 'none';
+        chrome.runtime.sendMessage({
+          type: 'add_to_watchlist',
+          payload: {
+            ...product,
+            effectivePrice: bestOffer.potentialEffectivePrice
+          }
+        });
+      } else if (act === 'save-deal') {
+        t.innerText = 'Saved!';
+        t.style.pointerEvents = 'none';
+        chrome.runtime.sendMessage({
+          type: 'record_savings',
+          payload: {
+            productId: product.canonicalProductId,
+            title: product.title,
+            merchant: product.merchant,
+            originalPrice: product.price,
+            finalPrice: bestOffer.potentialEffectivePrice,
+            savings: bestOffer.totalSavings,
+            currency: cur
+          }
+        });
+      }
+    });
+  }
+
+  async function maybeTriggerBestOffer() {
+    const prod = detectInPageProduct();
+    if (!prod) return;
+
+    const offerResult = detectInPageOffers(prod.price);
+    const offers = offerResult.offers;
+
+    let guaranteedSavings = 0;
+    let conditionalSavings = 0;
+    let potentialSavings = 0;
+
+    for (const o of offers) {
+      if (o.tier === 'guaranteed') guaranteedSavings += o.amount;
+      else if (o.tier === 'conditional') conditionalSavings += o.amount;
+      else if (o.tier === 'potential') potentialSavings += o.amount;
+    }
+
+    const totalSavings = guaranteedSavings + conditionalSavings + potentialSavings;
+    const guaranteedEffectivePrice = Math.max(0, prod.price - guaranteedSavings);
+    const potentialEffectivePrice = Math.max(0, prod.price - totalSavings);
+
+    const bestOffer = {
+      basePrice: prod.price,
+      guaranteedSavings,
+      conditionalSavings,
+      potentialSavings,
+      totalSavings,
+      guaranteedEffectivePrice,
+      potentialEffectivePrice,
+      isFreeDelivery: offerResult.isFreeDelivery,
+      appliedOffers: offers
+    };
+
+    // Save observation & sync active offer to background
+    try {
+      chrome.runtime.sendMessage({
+        type: 'record_price_observation',
+        payload: {
+          ...prod,
+          effectivePrice: potentialEffectivePrice
+        }
+      });
+      chrome.runtime.sendMessage({
+        type: 'set_active_offer',
+        payload: {
+          product: prod,
+          bestOffer,
+          observedAt: Date.now()
+        }
+      });
+    } catch {}
+
+    // Evaluate Buy vs Wait
+    let buyWait = {
+      verdict: 'good',
+      label: '🟢 Good Time to Buy',
+      badgeClass: 'deal-good',
+      summary: totalSavings > 0 ? `Save ${fmtCurrency(totalSavings, prod.currency)} with detected offers` : 'Best verified current price'
+    };
+
+    try {
+      chrome.runtime.sendMessage(
+        { type: 'get_price_history', canonicalProductId: prod.canonicalProductId },
+        (res) => {
+          const hist = res?.history || [];
+          if (hist.length >= 2) {
+            const prices = hist.map(h => h.effectivePrice || h.price).filter(p => p > 0);
+            const sum = prices.reduce((a, b) => a + b, 0);
+            const avg = Math.round(sum / prices.length);
+            const diffPct = Math.round(((avg - potentialEffectivePrice) / avg) * 100);
+            if (diffPct >= 10) {
+              buyWait = {
+                verdict: 'excellent',
+                label: '🟢 Excellent Deal',
+                badgeClass: 'deal-excellent',
+                summary: `${diffPct}% below recent average (${fmtCurrency(avg, prod.currency)})`
+              };
+            } else if (diffPct <= -5) {
+              buyWait = {
+                verdict: 'wait',
+                label: '🔴 I\'d Wait',
+                badgeClass: 'deal-wait',
+                summary: `Price is ${Math.abs(diffPct)}% above recent average (${fmtCurrency(avg, prod.currency)})`
+              };
+            }
+          }
+          renderBestOfferWidget({ product: prod, bestOffer, buyWait });
+        }
+      );
+    } catch {
+      renderBestOfferWidget({ product: prod, bestOffer, buyWait });
+    }
+  }
+
   function recordPageVisit() {
     const svc = identifyService();
     if (svc) {
@@ -310,11 +786,10 @@
   setTimeout(() => {
     recordPageVisit();
     maybeTrigger();
+    maybeTriggerBestOffer();
   }, 1500);
 
-  // Re-check on SPA-style navigation (best-effort).
-  // Use history API hooks + popstate instead of a wide MutationObserver — that
-  // observer fired on every DOM mutation site-wide and burned CPU on busy pages.
+  // Re-check on SPA-style navigation
   let lastHref = location.href;
   const onUrlChange = () => {
     if (location.href === lastHref) return;
@@ -322,6 +797,7 @@
     setTimeout(() => {
       recordPageVisit();
       maybeTrigger();
+      maybeTriggerBestOffer();
     }, 1500);
   };
   const wrap = (k) => {

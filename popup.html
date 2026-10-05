@@ -50,8 +50,57 @@
     <!-- pending captures (toast notice inside popup) -->
     <div id="pending-captures" class="pending-captures hidden"></div>
 
+    <!-- Two Pillars (Master Plan: 🛍️ BEST OFFER (Primary) & 🔄 SUBSCRIPTIONS (Secondary)) -->
+    <div class="pillar-wrap">
+      <nav class="pillar-nav" role="tablist" aria-label="Catchly Pillars">
+        <button type="button" class="pillar-btn active" id="pillar-offers" data-pillar="offers">
+          <span class="pillar-icon">🛍️</span>
+          <span class="pillar-label">Best Offer</span>
+          <span class="pillar-live-badge hidden" id="pillar-live-badge">Live</span>
+        </button>
+        <button type="button" class="pillar-btn" id="pillar-subs" data-pillar="subs">
+          <span class="pillar-icon">🔄</span>
+          <span class="pillar-label">Subscriptions</span>
+          <span class="pillar-sub-count" id="pillar-sub-count">0</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- BEST OFFER VIEW (PRIMARY PILLAR) -->
+    <section id="pillar-offers-view" class="pillar-view active">
+      <!-- Live Deal Mount -->
+      <div id="offer-card-mount" class="offer-card-mount"></div>
+
+      <!-- Catchly Savings Strip -->
+      <section class="offer-savings-strip" id="offer-savings-strip">
+        <div class="savings-stat">
+          <div class="savings-eyebrow">saved with catchly</div>
+          <div class="savings-value tabular" id="stat-total-saved">₹0</div>
+        </div>
+        <div class="savings-stat">
+          <div class="savings-eyebrow">deals caught</div>
+          <div class="savings-value tabular" id="stat-deals-caught">0</div>
+        </div>
+        <div class="savings-stat">
+          <div class="savings-eyebrow">engine</div>
+          <div class="savings-status-pill">100% Local</div>
+        </div>
+      </section>
+
+      <!-- Tracked Price Watch Section -->
+      <section class="offer-watchlist-section">
+        <div class="section-head">
+          <div class="card-eyebrow">price watch &amp; tracked products</div>
+        </div>
+        <ul id="offer-watchlist" class="offer-watchlist"></ul>
+        <div id="watchlist-empty" class="empty-compact">
+          <div class="empty-compact-text">Open any product page on Amazon, Flipkart, or Croma. Catchly will instantly scan for hidden coupons, card discounts, and best effective price.</div>
+        </div>
+      </section>
+    </section>
+
     <!-- summary strip -->
-    <section class="summary" id="summary">
+    <section class="summary hidden" id="summary">
       <div class="summary-stat">
         <div class="stat-eyebrow">monthly</div>
         <div class="stat-value" id="stat-month">$0.00</div>
@@ -66,8 +115,8 @@
       </div>
     </section>
 
-    <!-- tab panes -->
-    <main class="pane-host">
+    <!-- tab panes (Subscriptions Pillar) -->
+    <main class="pane-host hidden" id="subs-pane-host">
 
       <!-- SUBS PANE -->
       <section class="pane active" data-pane="subs">
@@ -226,7 +275,7 @@
     <div id="wl-toast" class="wl-toast hidden" role="status" aria-live="polite"></div>
 
     <!-- bottom tab bar -->
-    <nav class="tabs bottom-tabs" role="tablist" aria-label="Sections">
+    <nav class="tabs bottom-tabs hidden" id="subs-bottom-tabs" role="tablist" aria-label="Sections">
       <button class="tab active" data-tab="subs" aria-label="Subscriptions">
         <span class="tab-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-7"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg></span>
         <span class="tab-label">Subs</span>

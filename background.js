@@ -7,7 +7,10 @@
 
 import {
   getAllSubs, getSettings, getDaysSinceLastVisit,
-  addPendingCapture, recordUsage, logEvent, getEvents
+  addPendingCapture, recordUsage, logEvent, getEvents,
+  recordPriceObservation, getProductPriceHistory, setActiveOffer,
+  getActiveOffer, recordSavingsEvent, getSavingsSummary,
+  addToWatchlist, getWatchlist, removeFromWatchlist
 } from './lib/storage.js';
 import { daysUntil, urgencyOf, fmtMoney } from './lib/utils.js';
 
@@ -244,6 +247,33 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         for (const s of subs) await scheduleAlarmsForSub(s, settings);
         await refreshBadge();
         sendResponse({ ok: true });
+      } else if (msg.type === 'record_price_observation') {
+        const history = await recordPriceObservation(msg.payload);
+        sendResponse({ ok: true, history });
+      } else if (msg.type === 'get_price_history') {
+        const history = await getProductPriceHistory(msg.canonicalProductId);
+        sendResponse({ ok: true, history });
+      } else if (msg.type === 'set_active_offer') {
+        await setActiveOffer(msg.payload);
+        sendResponse({ ok: true });
+      } else if (msg.type === 'get_active_offer') {
+        const offer = await getActiveOffer();
+        sendResponse({ ok: true, offer });
+      } else if (msg.type === 'record_savings') {
+        const event = await recordSavingsEvent(msg.payload);
+        sendResponse({ ok: true, event });
+      } else if (msg.type === 'get_savings_summary') {
+        const summary = await getSavingsSummary();
+        sendResponse({ ok: true, summary });
+      } else if (msg.type === 'add_to_watchlist') {
+        const list = await addToWatchlist(msg.payload);
+        sendResponse({ ok: true, list });
+      } else if (msg.type === 'get_watchlist') {
+        const list = await getWatchlist();
+        sendResponse({ ok: true, list });
+      } else if (msg.type === 'remove_from_watchlist') {
+        const list = await removeFromWatchlist(msg.canonicalProductId);
+        sendResponse({ ok: true, list });
       } else {
         sendResponse({ ok: false, error: 'unknown' });
       }
