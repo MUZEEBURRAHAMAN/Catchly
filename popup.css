@@ -2593,11 +2593,11 @@ html.is-theme-switching * {
   line-height: 1.4;
 }
 
-/* Cross-Store Price Comparison Card */
+/* Cross-Store Price Comparison Card (Design System v1.0) */
 .offer-compare-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-card);
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -2616,6 +2616,9 @@ html.is-theme-switching * {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .compare-head-status {
@@ -2623,8 +2626,8 @@ html.is-theme-switching * {
   font-weight: 700;
   color: var(--success);
   background: rgba(18, 183, 106, 0.12);
-  padding: 1px 6px;
-  border-radius: 999px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -2632,45 +2635,28 @@ html.is-theme-switching * {
 .compare-store-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  max-height: 250px;
+  gap: 8px;
+  max-height: 260px;
   overflow-y: auto;
   padding-right: 2px;
 }
-
-.compare-store-icon {
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 8.5px;
-  font-weight: 700;
-  color: #fff;
-  background: var(--muted);
-  flex-shrink: 0;
+.compare-store-list::-webkit-scrollbar {
+  width: 4px;
 }
-.compare-store-icon.amazon { background: #FF9900; color: #111; }
-.compare-store-icon.flipkart { background: #2874F0; }
-.compare-store-icon.croma { background: #00B594; }
-.compare-store-icon.reliance { background: #E42529; }
-.compare-store-icon.tatacliq { background: #1A1A1A; }
-.compare-store-icon.vijaysales { background: #C40B0B; }
-.compare-store-icon.jiomart { background: #0078AD; }
-.compare-store-icon.poorvika { background: #FF6600; }
-.compare-store-icon.sangeetha { background: #154360; }
-.compare-store-icon.brandstore { background: #4A4A4A; }
+.compare-store-list::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
 
 .compare-store-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 7px 10px;
+  padding: 8px 12px;
   background: var(--canvas);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  transition: border-color var(--t-fast);
+  border-radius: var(--radius-card);
+  transition: border-color var(--t-fast), background var(--t-fast);
 }
 
 .compare-store-row.best-deal {
@@ -2685,23 +2671,26 @@ html.is-theme-switching * {
 }
 
 .compare-store-name {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--ink);
   display: flex;
   align-items: center;
   gap: 6px;
+  letter-spacing: -0.005em;
 }
 
 .compare-deal-tag {
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--success);
+  padding-left: 20px;
 }
 
 .compare-store-badge {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted);
+  padding-left: 20px;
 }
 
 .compare-store-right {
@@ -2716,6 +2705,7 @@ html.is-theme-switching * {
   font-weight: 700;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
 }
 
 .compare-link-btn {
@@ -2726,20 +2716,23 @@ html.is-theme-switching * {
   font-weight: 600;
   color: #FFFFFF;
   background: var(--primary);
-  padding: 3px 8px;
-  border-radius: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-input);
   text-decoration: none;
-  transition: background var(--t-fast);
+  transition: background var(--t-fast), transform var(--t-fast);
 }
 .compare-link-btn:hover {
   background: var(--primary-hover);
 }
+.compare-link-btn:active {
+  transform: scale(0.97);
+}
 
 .compare-alert-banner {
-  padding: 8px 10px;
-  background: rgba(18, 183, 106, 0.12);
-  border: 1px solid rgba(18, 183, 106, 0.3);
-  border-radius: 6px;
+  padding: 8px 12px;
+  background: rgba(18, 183, 106, 0.08);
+  border: 1px solid rgba(18, 183, 106, 0.25);
+  border-radius: var(--radius-input);
   font-size: 11px;
   font-weight: 500;
   color: var(--success);

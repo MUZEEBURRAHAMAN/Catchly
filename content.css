@@ -610,9 +610,9 @@
 .catchly-compare-section {
   display: flex !important;
   flex-direction: column !important;
-  gap: 6px !important;
+  gap: 8px !important;
   background: var(--o-surface) !important;
-  padding: 8px 10px !important;
+  padding: 10px 12px !important;
   border-radius: 8px !important;
   border: 1px solid var(--o-border) !important;
 }
@@ -621,7 +621,7 @@
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  font-size: 10.5px !important;
+  font-size: 11px !important;
   font-weight: 600 !important;
   color: var(--o-muted) !important;
   text-transform: uppercase !important;
@@ -631,21 +631,29 @@
 .catchly-compare-list {
   display: flex !important;
   flex-direction: column !important;
-  gap: 5px !important;
-  max-height: 210px !important;
+  gap: 6px !important;
+  max-height: 220px !important;
   overflow-y: auto !important;
   padding-right: 2px !important;
+}
+.catchly-compare-list::-webkit-scrollbar {
+  width: 4px !important;
+}
+.catchly-compare-list::-webkit-scrollbar-thumb {
+  background: var(--o-border) !important;
+  border-radius: 4px !important;
 }
 
 .catchly-compare-row {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  font-size: 11.5px !important;
-  padding: 4px 6px !important;
-  border-radius: 5px !important;
+  font-size: 12px !important;
+  padding: 6px 8px !important;
+  border-radius: 6px !important;
   background: var(--o-canvas) !important;
   border: 1px solid var(--o-border) !important;
+  transition: background 120ms ease, border-color 120ms ease !important;
 }
 .catchly-compare-row.is-best-store {
   border-color: rgba(18, 183, 106, 0.4) !important;
@@ -655,7 +663,7 @@
 .catchly-compare-left {
   display: flex !important;
   align-items: center !important;
-  gap: 6px !important;
+  gap: 8px !important;
   color: var(--o-ink) !important;
   font-weight: 600 !important;
 }
@@ -663,25 +671,29 @@
 .catchly-compare-right {
   display: flex !important;
   align-items: center !important;
-  gap: 6px !important;
+  gap: 8px !important;
 }
 
 .catchly-compare-price {
   font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace !important;
   font-weight: 700 !important;
-  font-size: 11.5px !important;
+  font-size: 12px !important;
   color: var(--o-ink) !important;
   font-variant-numeric: tabular-nums !important;
 }
 
 .catchly-compare-link {
-  font-size: 10px !important;
+  font-size: 11px !important;
   font-weight: 600 !important;
   color: #FFFFFF !important;
   background: var(--o-primary) !important;
-  padding: 2px 6px !important;
-  border-radius: 3px !important;
+  padding: 3px 8px !important;
+  border-radius: 4px !important;
   text-decoration: none !important;
+  transition: background 120ms ease !important;
+}
+.catchly-compare-link:hover {
+  background: var(--o-primary-hover) !important;
 }
 .catchly-compare-link:hover {
   background: var(--o-primary-hover) !important;

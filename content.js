@@ -664,8 +664,8 @@
                 <div class="catchly-compare-left">
                   <span>${isBest ? '🟢' : '⚪'}</span>
                   <span>${escapeHtml(store.merchant)}</span>
-                  ${store.isCurrent ? '<span style="font-size:9.5px;color:var(--o-muted);font-weight:400;">(Current)</span>' : ''}
-                  ${!store.isCurrent && store.savingsVsCurrent > 50 ? `<span style="font-size:9.5px;color:var(--o-success);font-weight:600;">Save ${fmtCurrency(store.savingsVsCurrent, cur)}</span>` : ''}
+                  ${store.isCurrent ? '<span style="font-size:10px;color:var(--o-muted);font-weight:500;">(Current)</span>' : ''}
+                  ${!store.isCurrent && store.savingsVsCurrent > 50 ? `<span style="font-size:10px;color:var(--o-success);font-weight:600;">Save ${fmtCurrency(store.savingsVsCurrent, cur)}</span>` : ''}
                 </div>
                 <div class="catchly-compare-right">
                   <span class="catchly-compare-price">${fmtCurrency(store.price, cur)}</span>
