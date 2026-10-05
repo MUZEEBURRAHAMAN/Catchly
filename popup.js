@@ -392,11 +392,14 @@ async function renderActiveOfferCard() {
 
           compList.innerHTML = bannerHtml + comp.allStores.map(store => {
             const isBest = store.price === comp.allStores[0].price && comp.allStores.length > 1;
+            const monogram = (store.merchant || 'S').slice(0, 2).toUpperCase();
             return `
               <div class="compare-store-row ${isBest ? 'best-deal' : ''}">
                 <div class="compare-store-info">
                   <span class="compare-store-name">
-                    ${isBest ? '🟢' : '⚪'} ${esc(store.merchant)}
+                    <span class="compare-store-icon ${esc(store.merchantKey || '')}">${monogram}</span>
+                    <span>${esc(store.merchant)}</span>
+                    ${isBest ? '<span style="font-size:10px;">🟢</span>' : ''}
                   </span>
                   ${store.isCurrent ? '<span class="compare-store-badge">Current Page</span>' : ''}
                   ${!store.isCurrent && store.savingsVsCurrent > 0 ? `<span class="compare-deal-tag">Save ${fmtMoney(store.savingsVsCurrent, cur)}</span>` : ''}

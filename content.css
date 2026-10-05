@@ -632,6 +632,9 @@
   display: flex !important;
   flex-direction: column !important;
   gap: 5px !important;
+  max-height: 210px !important;
+  overflow-y: auto !important;
+  padding-right: 2px !important;
 }
 
 .catchly-compare-row {

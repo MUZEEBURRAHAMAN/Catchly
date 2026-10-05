@@ -169,4 +169,77 @@ console.log('\n5. Testing Cross-Store Comparison & Query Building...');
   console.log('   ✓ Cross-store search query building & matching score verified.');
 }
 
+// 6. Strict Same-Product & 10-Store Table Tests
+console.log('\n6. Testing Strict Same-Product Filter & 10-Store Comparison...');
+{
+  const {
+    isPriceSane, isExactSameProduct, STORE_ROSTER, fetchCrossStoreComparisons
+  } = await import('../lib/cross-store.js');
+
+  // Verify 10 platforms in store roster
+  assert.strictEqual(STORE_ROSTER.length, 10);
+  assert(STORE_ROSTER.some(s => s.key === 'amazon'));
+  assert(STORE_ROSTER.some(s => s.key === 'flipkart'));
+  assert(STORE_ROSTER.some(s => s.key === 'croma'));
+  assert(STORE_ROSTER.some(s => s.key === 'reliance'));
+  assert(STORE_ROSTER.some(s => s.key === 'tatacliq'));
+  assert(STORE_ROSTER.some(s => s.key === 'vijaysales'));
+  assert(STORE_ROSTER.some(s => s.key === 'jiomart'));
+  assert(STORE_ROSTER.some(s => s.key === 'poorvika'));
+  assert(STORE_ROSTER.some(s => s.key === 'sangeetha'));
+  assert(STORE_ROSTER.some(s => s.key === 'brandstore'));
+
+  // Test Price Sanity Filter: User reported ₹96,990 vs ₹4,70,990
+  const basePrice = 96990;
+  assert.strictEqual(isPriceSane(470990, basePrice), false); // 4.8x higher -> REJECTED!
+  assert.strictEqual(isPriceSane(94990, basePrice), true);   // within 2% -> ACCEPTED
+  assert.strictEqual(isPriceSane(102000, basePrice), true);  // within 5% -> ACCEPTED
+  assert.strictEqual(isPriceSane(150000, basePrice), false); // >30% higher -> REJECTED
+  assert.strictEqual(isPriceSane(50000, basePrice), false);  // <30% lower -> REJECTED
+
+  // Test Exact Same Product checks
+  const targetProduct = {
+    brand: 'Apple',
+    title: 'Apple iPhone 16 Pro 128GB Desert Titanium',
+    price: 96990
+  };
+
+  // Wildly mismatched product / bundle
+  assert.strictEqual(isExactSameProduct(targetProduct, 'Apple Mac Studio M2 Ultra 128GB RAM', 470990), false);
+
+  // Differing model tier (Pro vs Pro Max)
+  assert.strictEqual(isExactSameProduct(targetProduct, 'Apple iPhone 16 Pro Max 128GB', 96990), false);
+
+  // Differing storage tier (128GB vs 256GB)
+  assert.strictEqual(isExactSameProduct(targetProduct, 'Apple iPhone 16 Pro 256GB Desert Titanium', 106990), false);
+
+  // Case/accessory match
+  assert.strictEqual(isExactSameProduct(targetProduct, 'Clear Case for Apple iPhone 16 Pro', 999), false);
+
+  // Exact match candidate
+  assert.strictEqual(isExactSameProduct(targetProduct, 'Apple iPhone 16 Pro (Desert Titanium, 128 GB)', 95999), true);
+
+  // Test 10-Platform Comparison Table generation
+  const comp = await fetchCrossStoreComparisons({
+    title: 'Apple iPhone 16 Pro 128GB',
+    brand: 'Apple',
+    merchant: 'Amazon',
+    merchantKey: 'amazon',
+    price: 96990
+  });
+
+  assert.strictEqual(comp.allStores.length, 10);
+  assert(comp.allStores.some(s => s.merchantKey === 'amazon' && s.isCurrent === true));
+  assert(comp.allStores.some(s => s.merchantKey === 'flipkart'));
+  assert(comp.allStores.some(s => s.merchantKey === 'croma'));
+  assert(comp.allStores.some(s => s.merchantKey === 'reliance'));
+
+  // Ensure prices are sorted ascending
+  for (let i = 1; i < comp.allStores.length; i++) {
+    assert(comp.allStores[i].price >= comp.allStores[i - 1].price);
+  }
+
+  console.log('   ✓ Strict same-product filter & 10-store comparison table verified.');
+}
+
 console.log('\n🎉 ALL BEST OFFER ENGINE TESTS PASSED SUCCESSFULLY!\n');

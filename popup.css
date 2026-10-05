@@ -2633,13 +2633,40 @@ html.is-theme-switching * {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  max-height: 250px;
+  overflow-y: auto;
+  padding-right: 2px;
 }
+
+.compare-store-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--muted);
+  flex-shrink: 0;
+}
+.compare-store-icon.amazon { background: #FF9900; color: #111; }
+.compare-store-icon.flipkart { background: #2874F0; }
+.compare-store-icon.croma { background: #00B594; }
+.compare-store-icon.reliance { background: #E42529; }
+.compare-store-icon.tatacliq { background: #1A1A1A; }
+.compare-store-icon.vijaysales { background: #C40B0B; }
+.compare-store-icon.jiomart { background: #0078AD; }
+.compare-store-icon.poorvika { background: #FF6600; }
+.compare-store-icon.sangeetha { background: #154360; }
+.compare-store-icon.brandstore { background: #4A4A4A; }
 
 .compare-store-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 10px;
+  padding: 7px 10px;
   background: var(--canvas);
   border: 1px solid var(--border);
   border-radius: 6px;
