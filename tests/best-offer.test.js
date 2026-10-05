@@ -242,4 +242,77 @@ console.log('\n6. Testing Strict Same-Product Filter & 10-Store Comparison...');
   console.log('   ✓ Strict same-product filter & 10-store comparison table verified.');
 }
 
+// 7. Multi-Platform Support: Target, Croma, Global/US Platforms
+console.log('\n7. Testing Multi-Platform (Target, Croma, US & Global Roster)...');
+{
+  const {
+    STORE_ROSTER_IN, STORE_ROSTER_US, getStoreRoster, fetchCrossStoreComparisons
+  } = await import('../lib/cross-store.js');
+  const {
+    getMerchantNameFromHost, getMerchantKeyFromHost
+  } = await import('../lib/product-detector.js');
+
+  // Verify US/Global platforms roster
+  assert.strictEqual(STORE_ROSTER_US.length, 10);
+  assert(STORE_ROSTER_US.some(s => s.key === 'target' && s.domain === 'target.com'));
+  assert(STORE_ROSTER_US.some(s => s.key === 'walmart' && s.domain === 'walmart.com'));
+  assert(STORE_ROSTER_US.some(s => s.key === 'bestbuy' && s.domain === 'bestbuy.com'));
+  assert(STORE_ROSTER_US.some(s => s.key === 'amazon' && s.domain === 'amazon.com'));
+  assert(STORE_ROSTER_US.some(s => s.key === 'bhphoto' && s.domain === 'bhphotovideo.com'));
+  assert(STORE_ROSTER_US.some(s => s.key === 'newegg' && s.domain === 'newegg.com'));
+  assert(STORE_ROSTER_US.some(s => s.key === 'costco' && s.domain === 'costco.com'));
+
+  // Verify India roster has Croma, Flipkart, Reliance Digital, etc.
+  assert(STORE_ROSTER_IN.some(s => s.key === 'croma' && s.domain === 'croma.com'));
+  assert(STORE_ROSTER_IN.some(s => s.key === 'flipkart' && s.domain === 'flipkart.com'));
+
+  // Test merchant detection for Target & Croma
+  assert.strictEqual(getMerchantNameFromHost('www.target.com'), 'Target');
+  assert.strictEqual(getMerchantKeyFromHost('www.target.com'), 'target');
+  assert.strictEqual(getMerchantNameFromHost('www.croma.com'), 'Croma');
+  assert.strictEqual(getMerchantKeyFromHost('www.croma.com'), 'croma');
+
+  // Test roster selection logic
+  const targetProduct = {
+    title: 'Apple AirPods Pro 2nd Gen',
+    brand: 'Apple',
+    merchant: 'Target',
+    merchantKey: 'target',
+    currency: 'USD',
+    price: 199.99,
+    url: 'https://www.target.com/p/apple-airpods-pro-2nd-gen/-/A-85978612'
+  };
+  const selectedRosterUS = getStoreRoster(targetProduct);
+  assert.strictEqual(selectedRosterUS, STORE_ROSTER_US);
+
+  const cromaProduct = {
+    title: 'Apple iPhone 16 Pro 128GB',
+    brand: 'Apple',
+    merchant: 'Croma',
+    merchantKey: 'croma',
+    currency: 'INR',
+    price: 96990,
+    url: 'https://www.croma.com/apple-iphone-16-pro/p/308571'
+  };
+  const selectedRosterIN = getStoreRoster(cromaProduct);
+  assert.strictEqual(selectedRosterIN, STORE_ROSTER_IN);
+
+  // Test US Comparison generation with Target as current store
+  const targetComp = await fetchCrossStoreComparisons(targetProduct);
+  assert.strictEqual(targetComp.allStores.length, 10);
+  assert(targetComp.allStores.some(s => s.merchantKey === 'target' && s.isCurrent === true));
+  assert(targetComp.allStores.some(s => s.merchantKey === 'walmart'));
+  assert(targetComp.allStores.some(s => s.merchantKey === 'bestbuy'));
+  assert(targetComp.allStores.some(s => s.merchantKey === 'amazon'));
+
+  // Test Croma Comparison generation with Croma as current store
+  const cromaComp = await fetchCrossStoreComparisons(cromaProduct);
+  assert.strictEqual(cromaComp.allStores.length, 10);
+  assert(cromaComp.allStores.some(s => s.merchantKey === 'croma' && s.isCurrent === true));
+  assert(cromaComp.allStores.some(s => s.merchantKey === 'amazon'));
+  assert(cromaComp.allStores.some(s => s.merchantKey === 'flipkart'));
+
+  console.log('   ✓ Target, Croma, US & India 10-store platform comparisons verified.');
+}
+
 console.log('\n🎉 ALL BEST OFFER ENGINE TESTS PASSED SUCCESSFULLY!\n');
