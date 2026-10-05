@@ -1,6 +1,6 @@
 {
   "name": "catchly",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Privacy-first Chrome extension that tracks your subscriptions without ever asking for your bank login. Detects sign-ups on supported services, warns before renewal, flags price hikes, points to where to cancel.",
   "license": "MIT",

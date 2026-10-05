@@ -22,58 +22,54 @@ Step-by-step. Costs $5 one-time, takes 1-3 business days for first review.
 ## 3. Package the extension
 
 ```bash
-cd /Users/muzeeburrahaman/Downloads/catchly
-# Exclude dev-only files from the zip
-zip -r catchly-v0.1.0.zip . \
+cd "/Users/muzeeburrahaman/Downloads/ai agents/Catchly-main"
+# Exclude dev-only, docs, and git files from the zip
+zip -r catchly-v0.2.0.zip . \
   -x '.git/*' \
   -x '.github/*' \
-  -x '.gstack/*' \
   -x '.DS_Store' \
-  -x 'logos/Product Audit(15/*' \
-  -x 'logos/appicon.png' \
-  -x 'PUBLISHING.md' \
-  -x 'test-report.md' \
-  -x 'critical-bugs.md' \
-  -x 'manual-test-checklist.md' \
-  -x 'CHANGELOG.md' \
-  -x 'README.md' \
-  -x 'worker/*'
+  -x '*/.DS_Store' \
+  -x 'tests/*' \
+  -x 'playwright.config.js' \
+  -x 'store-assets/*' \
+  -x 'worker/*' \
+  -x '*.zip'
 ```
 
-The store only needs the runtime files (manifest, popup, options, background, content, lib/, icons/, fonts/, logos/<svg>, theme-bootstrap.js). Strip everything else.
+The store only needs the runtime files (`manifest.json`, `background.js`, `content.js`, `content.css`, `popup.html`, `popup.css`, `popup.js`, `options.html`, `options.css`, `options.js`, `theme-bootstrap.js`, `lib/`, `icons/`, `fonts/`, `logos/`). Strip everything else.
 
 ## 4. Required assets
 
 Chrome Web Store needs these. Sizes are pixel-exact.
 
 - [ ] **Icon 128×128** — already at `icons/icon128.png`
-- [ ] **Small promo tile 440×280 PNG** — required for store listing
-- [ ] **Marquee promo tile 1400×560 PNG** — required if you want Featured placement (optional)
-- [ ] **Screenshot 1280×800 or 640×400 PNG** — at least 1, up to 5. Show the popup with the bracket-target tile + sample data.
-- [ ] **Privacy policy URL** — single static page hosted anywhere (GitHub Pages works). Must state: what data is collected (nothing leaves the device for v1, only the waitlist email is sent to the worker), how it's stored, how to delete.
+- [ ] **Small promo tile 440×280 PNG** — located at `store-assets/promo-tile-440x280.png`
+- [ ] **Large promo tile 920×680 / Marquee 1400×560 PNG** — `store-assets/promo-tile-880x560.png`
+- [ ] **Screenshots 1280×800 PNG** — 5 prepared screenshots in `store-assets/`
+- [ ] **Privacy policy URL** — `https://getcatchly.com/privacy`
 
 ## 5. Submit
 
 1. https://chrome.google.com/webstore/devconsole → "+ New item"
-2. Upload `catchly-v0.1.0.zip`
-3. Fill out the listing:
+2. Upload `catchly-v0.2.0.zip`
+3. Fill out the listing using copy from `store-assets/listing-copy.md`:
    - **Name:** Catchly
-   - **Summary:** "Privacy-first subscription tracker. Auto-detects subs at checkout, warns before renewal, flags price hikes, guides cancellation. Local-only — no bank login, no data sold."
+   - **Summary:** "Catch forgotten subscriptions, price hikes, and shadow charges — locally, in your browser. No bank login. No account."
    - **Category:** Productivity
    - **Language:** English (en)
-   - **Detailed description:** elaborate on the summary; include the privacy thesis and the 12 features from `README.md`
-4. Upload promo tile + screenshots
-5. Paste privacy policy URL
+   - **Detailed description:** Paste from `store-assets/listing-copy.md`
+4. Upload promo tiles + screenshots from `store-assets/`
+5. Paste privacy policy URL: `https://getcatchly.com/privacy`
 6. **Privacy practices** form — declare:
-   - Personal identifiable info: email (only if user opts into the waitlist)
-   - Web history / activity: NOT collected (content script runs on `<all_urls>` but doesn't send anything off-device for v1)
-   - Health, financial, authentication: NOT collected
-7. Justify each permission:
-   - `storage`: persist tracked subs + settings
-   - `alarms`: schedule renewal reminders
-   - `notifications`: surface renewal + trial-end warnings
-   - `tabs`: open the cancel page when user clicks "Open cancel page"
-   - `<all_urls>`: detect known subscription signup pages
+   - Personal identifiable info: Email (optional waitlist only)
+   - Web history / activity: NOT collected
+   - Financial & authentication info: NOT collected
+7. Justify permissions:
+   - `storage`: Persist tracked subscriptions, workspace categories, and settings locally
+   - `alarms`: Schedule renewal reminders, trial alerts, and contract notice deadlines
+   - `notifications`: Surface approaching renewal, trial end, and notice deadline warnings
+   - `sidePanel`: Open Catchly as a persistent side panel companion alongside browsing tabs
+   - Host permissions: Allow content script to detect checkouts on supported subscription services and checkout providers (Stripe, Paddle, LemonSqueezy)
 8. Submit for review
 
 ## 6. Wait
