@@ -13,7 +13,7 @@ import {
   addToWatchlist, getWatchlist, removeFromWatchlist
 } from './lib/storage.js';
 import { daysUntil, urgencyOf, fmtMoney } from './lib/utils.js';
-import { fetchCrossStoreComparisons } from './lib/cross-store.js';
+import { fetchCrossStoreComparisons, isPriceSane } from './lib/cross-store.js';
 
 const ALARM_DAILY = 'catchly_daily';
 const ALARM_BADGE = 'catchly_badge';
@@ -27,6 +27,15 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   for (const name of LEGACY_ALARMS) {
     try { await chrome.alarms.clear(name); } catch {}
   }
+  // Clear any stale legacy cross-store comparison cache entries
+  try {
+    const all = await chrome.storage.local.get(null);
+    const staleKeys = Object.keys(all).filter(k => k.startsWith('comp_') && !k.startsWith('comp_v4_'));
+    if (staleKeys.length > 0) {
+      await chrome.storage.local.remove(staleKeys);
+    }
+  } catch {}
+
   await chrome.alarms.create(ALARM_DAILY, { periodInMinutes: 60 * 24 });
   await chrome.alarms.create(ALARM_BADGE, { periodInMinutes: 60 });
   await refreshBadge();
@@ -37,6 +46,13 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
 });
 
 chrome.runtime.onStartup.addListener(async () => {
+  try {
+    const all = await chrome.storage.local.get(null);
+    const staleKeys = Object.keys(all).filter(k => k.startsWith('comp_') && !k.startsWith('comp_v4_'));
+    if (staleKeys.length > 0) {
+      await chrome.storage.local.remove(staleKeys);
+    }
+  } catch {}
   await refreshBadge();
   await runDailyChecks();
 });
@@ -277,12 +293,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         sendResponse({ ok: true, list });
       } else if (msg.type === 'get_cross_store_comparison') {
         const product = msg.product;
-        const cacheKey = `comp_${product?.canonicalProductId || product?.title}`;
+        const basePrice = product?.effectivePrice || product?.price || 0;
+        const cacheKey = `comp_v4_${product?.canonicalProductId || product?.title}`;
         const cached = await chrome.storage.local.get(cacheKey);
         const cachedData = cached[cacheKey];
         const now = Date.now();
 
-        if (cachedData && (now - cachedData.timestamp < 2 * 3600_000)) {
+        // Validate cached data contains all 10 stores and sane prices
+        const isValid = cachedData &&
+          cachedData.data &&
+          Array.isArray(cachedData.data.allStores) &&
+          cachedData.data.allStores.length >= 10 &&
+          cachedData.data.allStores.every(s => !s.price || isPriceSane(s.price, basePrice));
+
+        if (isValid && (now - cachedData.timestamp < 30 * 60_000)) {
           sendResponse({ ok: true, comparison: cachedData.data, fromCache: true });
         } else {
           const comp = await fetchCrossStoreComparisons(product);
