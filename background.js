@@ -13,6 +13,7 @@ import {
   addToWatchlist, getWatchlist, removeFromWatchlist
 } from './lib/storage.js';
 import { daysUntil, urgencyOf, fmtMoney } from './lib/utils.js';
+import { fetchCrossStoreComparisons } from './lib/cross-store.js';
 
 const ALARM_DAILY = 'catchly_daily';
 const ALARM_BADGE = 'catchly_badge';
@@ -274,6 +275,22 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       } else if (msg.type === 'remove_from_watchlist') {
         const list = await removeFromWatchlist(msg.canonicalProductId);
         sendResponse({ ok: true, list });
+      } else if (msg.type === 'get_cross_store_comparison') {
+        const product = msg.product;
+        const cacheKey = `comp_${product?.canonicalProductId || product?.title}`;
+        const cached = await chrome.storage.local.get(cacheKey);
+        const cachedData = cached[cacheKey];
+        const now = Date.now();
+
+        if (cachedData && (now - cachedData.timestamp < 2 * 3600_000)) {
+          sendResponse({ ok: true, comparison: cachedData.data, fromCache: true });
+        } else {
+          const comp = await fetchCrossStoreComparisons(product);
+          await chrome.storage.local.set({
+            [cacheKey]: { data: comp, timestamp: now }
+          });
+          sendResponse({ ok: true, comparison: comp, fromCache: false });
+        }
       } else {
         sendResponse({ ok: false, error: 'unknown' });
       }

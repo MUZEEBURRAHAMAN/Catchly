@@ -147,4 +147,26 @@ console.log('\n4. Testing "Why Catchly Recommends This" Bullet Points...');
   reasons.forEach(r => console.log('     • ' + r));
 }
 
+// 5. Cross-Store Comparison Tests
+console.log('\n5. Testing Cross-Store Comparison & Query Building...');
+{
+  const { buildSearchQuery, computeMatchScore } = await import('../lib/cross-store.js');
+  const query = buildSearchQuery({
+    title: 'Apple iPhone 15 (Blue, 128 GB) - Buy Online at Best Price - Amazon.in',
+    brand: 'Apple'
+  });
+  assert(query.includes('Apple'));
+  assert(query.includes('iPhone'));
+  assert(query.includes('15'));
+  assert(query.includes('128GB'));
+
+  const score1 = computeMatchScore(query, 'Apple iPhone 15 (Blue, 128 GB)');
+  assert(score1 >= 0.7);
+
+  const scoreDiff = computeMatchScore(query, 'Samsung Galaxy S24 Ultra 256GB');
+  assert(scoreDiff < 0.3);
+
+  console.log('   ✓ Cross-store search query building & matching score verified.');
+}
+
 console.log('\n🎉 ALL BEST OFFER ENGINE TESTS PASSED SUCCESSFULLY!\n');

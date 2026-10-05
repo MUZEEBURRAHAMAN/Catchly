@@ -340,6 +340,17 @@ async function renderActiveOfferCard() {
         </div>
       </div>
 
+      <!-- Cross-Store Live Comparison -->
+      <div class="offer-compare-card" id="offer-compare-box">
+        <div class="compare-card-head">
+          <span class="compare-head-title">🏪 Compare Across Stores</span>
+          <span class="compare-head-status" id="comp-status-pill">Checking...</span>
+        </div>
+        <div class="compare-store-list" id="compare-store-list">
+          <div style="font-size:11px;color:var(--muted);padding:4px 0;">Comparing Flipkart, Croma, Amazon...</div>
+        </div>
+      </div>
+
       <div class="offer-card-ctas">
         <button type="button" class="btn btn-primary" id="btn-confirm-savings" style="flex:1;">
           ✓ Confirm ₹ Deal
@@ -350,6 +361,59 @@ async function renderActiveOfferCard() {
       </div>
     </div>
   `;
+
+  // Asynchronously fetch cross-store comparisons
+  try {
+    chrome.runtime.sendMessage(
+      { type: 'get_cross_store_comparison', product: { ...product, effectivePrice } },
+      (res) => {
+        const comp = res?.comparison;
+        const compList = mount.querySelector('#compare-store-list');
+        const compPill = mount.querySelector('#comp-status-pill');
+        if (!comp || !compList) return;
+
+        if (compPill) compPill.innerText = 'Live';
+
+        if (comp.allStores && comp.allStores.length > 0) {
+          let bannerHtml = '';
+          if (comp.isAnotherStoreCheaper && comp.bestStore) {
+            bannerHtml = `
+              <div class="compare-alert-banner">
+                <span>🔥 Cheaper on ${esc(comp.bestStore.merchant)}! Save ${fmtMoney(comp.cheaperSavings, cur)}</span>
+              </div>
+            `;
+          } else if (comp.allStores.length > 1) {
+            bannerHtml = `
+              <div class="compare-alert-banner" style="background:rgba(18,183,106,0.08);color:var(--success);">
+                <span>✓ Lowest price verified on ${esc(product.merchant || 'this store')}!</span>
+              </div>
+            `;
+          }
+
+          compList.innerHTML = bannerHtml + comp.allStores.map(store => {
+            const isBest = store.price === comp.allStores[0].price && comp.allStores.length > 1;
+            return `
+              <div class="compare-store-row ${isBest ? 'best-deal' : ''}">
+                <div class="compare-store-info">
+                  <span class="compare-store-name">
+                    ${isBest ? '🟢' : '⚪'} ${esc(store.merchant)}
+                  </span>
+                  ${store.isCurrent ? '<span class="compare-store-badge">Current Page</span>' : ''}
+                  ${!store.isCurrent && store.savingsVsCurrent > 0 ? `<span class="compare-deal-tag">Save ${fmtMoney(store.savingsVsCurrent, cur)}</span>` : ''}
+                </div>
+                <div class="compare-store-right">
+                  <span class="compare-store-price">${fmtMoney(store.price, cur)}</span>
+                  ${!store.isCurrent && store.url ? `<a href="${esc(store.url)}" target="_blank" rel="noopener noreferrer" class="compare-link-btn">View ↗</a>` : ''}
+                </div>
+              </div>
+            `;
+          }).join('');
+        } else {
+          compList.innerHTML = `<div style="font-size:11px;color:var(--muted);">No matching listings found on competitor stores.</div>`;
+        }
+      }
+    );
+  } catch {}
 
   // Attach event handlers
   mount.querySelector('#btn-confirm-savings')?.addEventListener('click', async (e) => {

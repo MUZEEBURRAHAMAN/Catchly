@@ -609,6 +609,15 @@
             <span style="opacity:0.85;font-size:10.5px;">&bull; ${escapeHtml(buyWait.summary)}</span>
           </div>
 
+          <!-- In-Page Cross Store Comparison Section -->
+          <div class="catchly-compare-section" id="__catchly_compare_section" style="display:none;">
+            <div class="catchly-compare-head">
+              <span>Compare Across Stores</span>
+              <span style="font-size:9px;color:var(--o-success);">Live</span>
+            </div>
+            <div class="catchly-compare-list" id="__catchly_compare_list"></div>
+          </div>
+
           <div class="catchly-card-actions">
             <button class="catchly-cta-btn catchly-cta-primary" data-offer-act="save-deal">
               ✓ Save ₹ Deal
@@ -629,6 +638,44 @@
 
     const pill = root.querySelector('#__catchly_pill');
     const card = root.querySelector('#__catchly_card');
+
+    // Asynchronously fetch competitor store prices
+    try {
+      chrome.runtime.sendMessage(
+        {
+          type: 'get_cross_store_comparison',
+          product: {
+            ...product,
+            effectivePrice: bestOffer.potentialEffectivePrice
+          }
+        },
+        (res) => {
+          const comp = res?.comparison;
+          if (!comp || !comp.allStores || comp.allStores.length < 2) return;
+          const section = card.querySelector('#__catchly_compare_section');
+          const list = card.querySelector('#__catchly_compare_list');
+          if (!section || !list) return;
+
+          section.style.display = 'flex';
+          list.innerHTML = comp.allStores.map(store => {
+            const isBest = store.price === comp.allStores[0].price;
+            return `
+              <div class="catchly-compare-row ${isBest ? 'is-best-store' : ''}">
+                <div class="catchly-compare-left">
+                  <span>${isBest ? '🟢' : '⚪'}</span>
+                  <span>${escapeHtml(store.merchant)}</span>
+                  ${store.isCurrent ? '<span style="font-size:9.5px;color:var(--o-muted);font-weight:400;">(Current)</span>' : ''}
+                </div>
+                <div class="catchly-compare-right">
+                  <span class="catchly-compare-price">${fmtCurrency(store.price, cur)}</span>
+                  ${!store.isCurrent && store.url ? `<a href="${escapeHtml(store.url)}" target="_blank" rel="noopener noreferrer" class="catchly-compare-link">View ↗</a>` : ''}
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      );
+    } catch {}
 
     pill.addEventListener('click', (e) => {
       const act = e.target?.getAttribute('data-offer-act');
