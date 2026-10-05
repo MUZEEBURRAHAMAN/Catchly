@@ -137,7 +137,7 @@
         <div class="catchly-toast-eyebrow">${label}</div>
         <div class="catchly-toast-title">${escapeHtml(serviceName)}</div>
         ${priceStr ? `<div class="catchly-toast-price">${priceStr}${isTrial ? ' after trial' : ''}</div>` : ''}
-        ${isTrial ? `<div class="catchly-toast-trial-tip" style="font-size:11px;line-height:1.3;color:#D97757;margin:4px 0 6px;font-weight:500;">👻 Pro tip: Cancel immediately in account settings. You'll retain full access until trial ends without auto-charges.</div>` : ''}
+        ${isTrial ? `<div class="catchly-toast-trial-tip" style="font-size:11px;line-height:1.3;color:#D97757;margin:4px 0 6px;font-weight:500;display:flex;align-items:flex-start;gap:4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><span>Pro tip: Cancel immediately in account settings. You'll retain full access until trial ends without auto-charges.</span></div>` : ''}
         <div class="catchly-toast-actions">
           <button class="catchly-btn catchly-btn-primary" data-act="track">Track this</button>
           <button class="catchly-btn catchly-btn-ghost" data-act="dismiss">Not now</button>
@@ -587,7 +587,7 @@
             ${bestOffer.appliedOffers.map(o => `
               <div class="catchly-offer-item">
                 <div class="catchly-offer-item-left">
-                  <span class="catchly-check-icon">✓</span>
+                  <span class="catchly-check-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
                   <span>${escapeHtml(o.title)}</span>
                 </div>
                 <div class="catchly-offer-item-right">-${fmtCurrency(o.amount, cur)}</div>
@@ -596,7 +596,7 @@
             ${bestOffer.isFreeDelivery ? `
               <div class="catchly-offer-item">
                 <div class="catchly-offer-item-left">
-                  <span class="catchly-check-icon">✓</span>
+                  <span class="catchly-check-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
                   <span>Free Delivery</span>
                 </div>
                 <div class="catchly-offer-item-right" style="color:var(--o-muted);">Included</div>
@@ -620,10 +620,12 @@
 
           <div class="catchly-card-actions">
             <button class="catchly-cta-btn catchly-cta-primary" data-offer-act="save-deal">
-              ✓ Save ₹ Deal
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Confirm Deal</span>
             </button>
             <button class="catchly-cta-btn catchly-cta-secondary" data-offer-act="track-price">
-              🔔 Track Price
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+              <span>Track Price</span>
             </button>
           </div>
 
@@ -662,7 +664,7 @@
             return `
               <div class="catchly-compare-row ${isBest ? 'is-best-store' : ''}">
                 <div class="catchly-compare-left">
-                  <span>${isBest ? '🟢' : '⚪'}</span>
+                  <span class="catchly-store-dot ${isBest ? 'is-best' : ''}"></span>
                   <span>${escapeHtml(store.merchant)}</span>
                   ${store.isCurrent ? '<span style="font-size:10px;color:var(--o-muted);font-weight:500;">(Current)</span>' : ''}
                   ${!store.isCurrent && store.savingsVsCurrent > 50 ? `<span style="font-size:10px;color:var(--o-success);font-weight:600;">Save ${fmtCurrency(store.savingsVsCurrent, cur)}</span>` : ''}
@@ -699,7 +701,7 @@
           pill.style.display = 'flex';
         }, 150);
       } else if (act === 'track-price') {
-        t.innerText = '✓ Tracking';
+        t.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><polyline points="20 6 9 17 4 12"/></svg>Tracking';
         t.style.pointerEvents = 'none';
         chrome.runtime.sendMessage({
           type: 'add_to_watchlist',
@@ -782,7 +784,7 @@
     // Evaluate Buy vs Wait
     let buyWait = {
       verdict: 'good',
-      label: '🟢 Good Time to Buy',
+      label: 'Good Time to Buy',
       badgeClass: 'deal-good',
       summary: totalSavings > 0 ? `Save ${fmtCurrency(totalSavings, prod.currency)} with detected offers` : 'Best verified current price'
     };
@@ -800,14 +802,14 @@
             if (diffPct >= 10) {
               buyWait = {
                 verdict: 'excellent',
-                label: '🟢 Excellent Deal',
+                label: 'Excellent Deal',
                 badgeClass: 'deal-excellent',
                 summary: `${diffPct}% below recent average (${fmtCurrency(avg, prod.currency)})`
               };
             } else if (diffPct <= -5) {
               buyWait = {
                 verdict: 'wait',
-                label: '🔴 I\'d Wait',
+                label: "I'd Wait",
                 badgeClass: 'deal-wait',
                 summary: `Price is ${Math.abs(diffPct)}% above recent average (${fmtCurrency(avg, prod.currency)})`
               };

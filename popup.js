@@ -114,7 +114,7 @@ function setThemeAttr(theme) {
 
 // ----------------------------------------------------------------------------
 // CATCHLY TWO PILLARS & BEST OFFER ENGINE
-// Master Plan: 🛍️ BEST OFFER (Primary) & 🔄 SUBSCRIPTIONS (Secondary)
+// Master Plan: BEST OFFER (Primary) & SUBSCRIPTIONS (Secondary)
 // ----------------------------------------------------------------------------
 function wirePillars() {
   const btnOffers = document.getElementById('pillar-offers');
@@ -205,17 +205,20 @@ async function renderActiveOfferCard() {
   if (!data || !data.product) {
     if (liveBadge) liveBadge.classList.add('hidden');
     mount.innerHTML = `
-      <div class="offer-deal-card" style="text-align: center; padding: 22px 14px;">
-        <div style="font-size: 28px; margin-bottom: 8px;">🛍️</div>
+      <div class="offer-deal-card" style="text-align: center; padding: 24px 16px;">
+        <div style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: var(--surface-2); margin-bottom: 10px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted);"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        </div>
         <div style="font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 4px;">Catch the Best Offer</div>
         <div style="font-size: 12px; color: var(--muted); line-height: 1.45; max-width: 280px; margin: 0 auto 14px;">
-          Open any product on Amazon, Flipkart, Myntra, or Croma. Catchly will scan for instant coupons, bank card discounts, and Buy vs. Wait price intelligence.
+          Open any product on Amazon, Flipkart, Target, Croma, or Walmart. Catchly will scan for instant coupons, card discounts, and live cross-store comparisons.
         </div>
-        <div style="display: flex; justify-content: center; gap: 6px;">
+        <div style="display: flex; justify-content: center; gap: 6px; flex-wrap: wrap;">
           <span class="offer-merchant-tag">Amazon</span>
           <span class="offer-merchant-tag">Flipkart</span>
+          <span class="offer-merchant-tag">Target</span>
           <span class="offer-merchant-tag">Croma</span>
-          <span class="offer-merchant-tag">Myntra</span>
+          <span class="offer-merchant-tag">Walmart</span>
         </div>
       </div>
     `;
@@ -234,7 +237,7 @@ async function renderActiveOfferCard() {
   const history = await getProductPriceHistory(product.canonicalProductId);
   let buyWait = {
     verdict: 'good',
-    label: '🟢 Good Time to Buy',
+    label: 'Good Time to Buy',
     badgeClass: 'deal-good',
     summary: totalSavings > 0 ? `Price is discounted with verified page offers` : 'Best verified current price',
     lowest: basePrice,
@@ -253,7 +256,7 @@ async function renderActiveOfferCard() {
     if (diffPct >= 10) {
       buyWait = {
         verdict: 'excellent',
-        label: '🟢 Excellent Deal',
+        label: 'Excellent Deal',
         badgeClass: 'deal-excellent',
         summary: `Price is ${diffPct}% below recent average`,
         lowest, avg, highest
@@ -261,7 +264,7 @@ async function renderActiveOfferCard() {
     } else if (diffPct <= -5) {
       buyWait = {
         verdict: 'wait',
-        label: '🔴 I\'d Wait',
+        label: "I'd Wait",
         badgeClass: 'deal-wait',
         summary: `Price is ${Math.abs(diffPct)}% higher than recent average`,
         lowest, avg, highest
@@ -269,7 +272,7 @@ async function renderActiveOfferCard() {
     } else {
       buyWait = {
         verdict: 'normal',
-        label: '🟡 Normal Price',
+        label: 'Normal Price',
         badgeClass: 'deal-normal',
         summary: `Within typical price range`,
         lowest, avg, highest
@@ -279,7 +282,9 @@ async function renderActiveOfferCard() {
 
   const thumbHtml = product.image
     ? `<img class="offer-product-thumb" src="${esc(product.image)}" alt="" />`
-    : `<div class="offer-thumb-placeholder">🛍️</div>`;
+    : `<div class="offer-thumb-placeholder">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted);"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+       </div>`;
 
   mount.innerHTML = `
     <div class="offer-deal-card">
@@ -303,7 +308,7 @@ async function renderActiveOfferCard() {
         ${bestOffer.appliedOffers?.map(o => `
           <div class="offer-perk-row">
             <div class="offer-perk-left">
-              <span class="offer-perk-check">✓</span>
+              <span class="offer-perk-check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
               <span>${esc(o.title)}</span>
               ${o.code ? `<span class="offer-code-pill" data-copy="${esc(o.code)}" title="Click to copy code">${esc(o.code)}</span>` : ''}
             </div>
@@ -313,7 +318,7 @@ async function renderActiveOfferCard() {
         ${bestOffer.isFreeDelivery ? `
           <div class="offer-perk-row">
             <div class="offer-perk-left">
-              <span class="offer-perk-check">✓</span>
+              <span class="offer-perk-check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
               <span>Free Delivery</span>
             </div>
             <div class="offer-perk-right" style="color:var(--muted);">Included</div>
@@ -322,7 +327,10 @@ async function renderActiveOfferCard() {
       </div>
 
       <div class="offer-buywait-card ${buyWait.badgeClass}">
-        <div class="offer-verdict-title">${buyWait.label}</div>
+        <div class="offer-verdict-title">
+          <span class="offer-verdict-dot"></span>
+          <span>${esc(buyWait.label)}</span>
+        </div>
         <div class="offer-verdict-desc">${esc(buyWait.summary)}</div>
         <div class="offer-history-grid">
           <div class="offer-hist-item">
@@ -343,20 +351,25 @@ async function renderActiveOfferCard() {
       <!-- Cross-Store Live Comparison -->
       <div class="offer-compare-card" id="offer-compare-box">
         <div class="compare-card-head">
-          <span class="compare-head-title">🏪 Compare Across Stores</span>
+          <span class="compare-head-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted);"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/></svg>
+            <span>Compare Across Stores</span>
+          </span>
           <span class="compare-head-status" id="comp-status-pill">Checking...</span>
         </div>
         <div class="compare-store-list" id="compare-store-list">
-          <div style="font-size:11px;color:var(--muted);padding:4px 0;">Comparing Flipkart, Croma, Amazon...</div>
+          <div style="font-size:11px;color:var(--muted);padding:4px 0;">Comparing live retail prices...</div>
         </div>
       </div>
 
       <div class="offer-card-ctas">
         <button type="button" class="btn btn-primary" id="btn-confirm-savings" style="flex:1;">
-          ✓ Confirm ₹ Deal
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Confirm Deal</span>
         </button>
         <button type="button" class="btn btn-secondary" id="btn-track-price" style="flex:1;">
-          🔔 Track Price
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <span>Track Price</span>
         </button>
       </div>
     </div>
@@ -379,13 +392,19 @@ async function renderActiveOfferCard() {
           if (comp.isAnotherStoreCheaper && comp.bestStore) {
             bannerHtml = `
               <div class="compare-alert-banner">
-                <span>🔥 Cheaper on ${esc(comp.bestStore.merchant)}! Save ${fmtMoney(comp.cheaperSavings, cur)}</span>
+                <span style="display:flex;align-items:center;gap:6px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="color:var(--warning);flex-shrink:0;"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+                  <span>Cheaper on ${esc(comp.bestStore.merchant)}! Save ${fmtMoney(comp.cheaperSavings, cur)}</span>
+                </span>
               </div>
             `;
           } else if (comp.allStores.length > 1) {
             bannerHtml = `
               <div class="compare-alert-banner" style="background:rgba(18,183,106,0.08);color:var(--success);">
-                <span>✓ Lowest price verified on ${esc(product.merchant || 'this store')}!</span>
+                <span style="display:flex;align-items:center;gap:6px;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--success);flex-shrink:0;"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Lowest price verified on ${esc(product.merchant || 'this store')}!</span>
+                </span>
               </div>
             `;
           }
@@ -396,7 +415,8 @@ async function renderActiveOfferCard() {
               <div class="compare-store-row ${isBest ? 'best-deal' : ''}">
                 <div class="compare-store-info">
                   <span class="compare-store-name">
-                    ${isBest ? '🟢' : '⚪'} ${esc(store.merchant)}
+                    <span class="compare-store-dot ${isBest ? 'is-best' : ''}"></span>
+                    <span>${esc(store.merchant)}</span>
                   </span>
                   ${store.isCurrent ? '<span class="compare-store-badge">Current Page</span>' : ''}
                   ${!store.isCurrent && store.savingsVsCurrent > 0 ? `<span class="compare-deal-tag">Save ${fmtMoney(store.savingsVsCurrent, cur)}</span>` : ''}
@@ -436,7 +456,7 @@ async function renderActiveOfferCard() {
 
   mount.querySelector('#btn-track-price')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
-    btn.innerText = '✓ Tracking';
+    btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px;"><polyline points="20 6 9 17 4 12"/></svg>Tracking';
     btn.style.pointerEvents = 'none';
     const list = await addToWatchlist({
       ...product,
@@ -2425,7 +2445,6 @@ const UPCOMING_FEATURES = [
   {
     version: 'gmail-scan-v1',
     eyebrow: 'COMING IN V1.0',
-    icon: '⚡', // ⚡
     title: 'Gmail auto-scan',
     body: 'Find every active subscription in your inbox in 15 seconds. Email is parsed locally — never uploaded.',
     ctaText: 'Get early access →',
@@ -2672,8 +2691,7 @@ class UpdatesController {
 
       const eyebrow = document.createElement('div');
       eyebrow.className = 'updates-item-eyebrow';
-      // Icon glyph + space + eyebrow text, both via textContent.
-      eyebrow.textContent = `${item.icon} ${item.eyebrow}`;
+      eyebrow.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:-1px;margin-right:5px;display:inline-block;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>${esc(item.eyebrow)}</span>`;
       wrap.appendChild(eyebrow);
 
       const title = document.createElement('div');

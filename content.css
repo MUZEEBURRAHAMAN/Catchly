@@ -660,6 +660,19 @@
   background: var(--o-success-bg) !important;
 }
 
+.catchly-store-dot {
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 50% !important;
+  background: var(--o-border) !important;
+  display: inline-block !important;
+  flex-shrink: 0 !important;
+}
+.catchly-store-dot.is-best {
+  background: var(--o-success) !important;
+  box-shadow: 0 0 0 2.5px rgba(18, 183, 106, 0.25) !important;
+}
+
 .catchly-compare-left {
   display: flex !important;
   align-items: center !important;

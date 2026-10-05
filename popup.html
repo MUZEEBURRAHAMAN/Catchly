@@ -50,16 +50,20 @@
     <!-- pending captures (toast notice inside popup) -->
     <div id="pending-captures" class="pending-captures hidden"></div>
 
-    <!-- Two Pillars (Master Plan: 🛍️ BEST OFFER (Primary) & 🔄 SUBSCRIPTIONS (Secondary)) -->
+    <!-- Two Pillars (Master Plan: BEST OFFER (Primary) & SUBSCRIPTIONS (Secondary)) -->
     <div class="pillar-wrap">
       <nav class="pillar-nav" role="tablist" aria-label="Catchly Pillars">
         <button type="button" class="pillar-btn active" id="pillar-offers" data-pillar="offers">
-          <span class="pillar-icon">🛍️</span>
+          <span class="pillar-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          </span>
           <span class="pillar-label">Best Offer</span>
           <span class="pillar-live-badge hidden" id="pillar-live-badge">Live</span>
         </button>
         <button type="button" class="pillar-btn" id="pillar-subs" data-pillar="subs">
-          <span class="pillar-icon">🔄</span>
+          <span class="pillar-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
+          </span>
           <span class="pillar-label">Subscriptions</span>
           <span class="pillar-sub-count" id="pillar-sub-count">0</span>
         </button>

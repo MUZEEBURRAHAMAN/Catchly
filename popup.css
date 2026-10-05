@@ -2431,6 +2431,30 @@ html.is-theme-switching * {
   font-size: 12px;
   font-weight: 600;
   color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.offer-verdict-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.deal-excellent .offer-verdict-dot,
+.deal-good .offer-verdict-dot {
+  background: var(--success);
+  box-shadow: 0 0 0 2px rgba(18, 183, 106, 0.25);
+}
+.deal-normal .offer-verdict-dot {
+  background: var(--warning);
+  box-shadow: 0 0 0 2px rgba(247, 144, 9, 0.25);
+}
+.deal-wait .offer-verdict-dot {
+  background: var(--danger);
+  box-shadow: 0 0 0 2px rgba(240, 68, 56, 0.25);
 }
 
 .offer-verdict-desc {
@@ -2676,21 +2700,35 @@ html.is-theme-switching * {
   color: var(--ink);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   letter-spacing: -0.005em;
+}
+
+.compare-store-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  display: inline-block;
+  flex-shrink: 0;
+  transition: all var(--t-fast);
+}
+.compare-store-dot.is-best {
+  background: var(--success);
+  box-shadow: 0 0 0 2.5px rgba(18, 183, 106, 0.25);
 }
 
 .compare-deal-tag {
   font-size: 11px;
   font-weight: 600;
   color: var(--success);
-  padding-left: 20px;
+  padding-left: 15px;
 }
 
 .compare-store-badge {
   font-size: 11px;
   color: var(--muted);
-  padding-left: 20px;
+  padding-left: 15px;
 }
 
 .compare-store-right {
