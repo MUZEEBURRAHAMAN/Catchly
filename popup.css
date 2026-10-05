@@ -2660,7 +2660,7 @@ html.is-theme-switching * {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 260px;
+  max-height: 360px;
   overflow-y: auto;
   padding-right: 2px;
 }
@@ -2777,6 +2777,62 @@ html.is-theme-switching * {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.offer-demo-switchers {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.demo-chip {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-2);
+  padding: 3px 9px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--t-fast);
+}
+
+.demo-chip:hover {
+  background: var(--border);
+  color: var(--ink);
+}
+
+.demo-chip.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.offer-demo-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: var(--canvas);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  transition: all var(--t-fast);
+  text-align: left;
+  width: 100%;
+}
+
+.offer-demo-btn:hover {
+  background: var(--surface-2);
+  border-color: var(--primary);
 }
 
 

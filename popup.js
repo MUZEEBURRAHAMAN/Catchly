@@ -196,6 +196,78 @@ function renderSavingsMetrics() {
   }
 }
 
+const DEMO_PRODUCTS = {
+  'sony-camera': {
+    product: {
+      canonicalProductId: 'sony_zv_e10m2k',
+      title: 'Sony Alpha ZV-E10M2K 26 MP Vlog Camera (16-50mm Lens)',
+      brand: 'Sony',
+      merchant: 'Amazon',
+      merchantKey: 'amazon',
+      currency: 'INR',
+      price: 96990,
+      url: 'https://www.amazon.in/Sony-ZV-E10M2K-Interchangeable-Mirrorless-Creators/dp/B0DJSLJYCF',
+      image: ''
+    },
+    bestOffer: {
+      basePrice: 96990,
+      guaranteedEffectivePrice: 96990,
+      potentialEffectivePrice: 95490,
+      totalSavings: 1500,
+      appliedOffers: [
+        { title: '₹1,500 Instant Discount on Bank Cards', amount: 1500, code: '' }
+      ],
+      isFreeDelivery: true
+    }
+  },
+  'iphone-16': {
+    product: {
+      canonicalProductId: 'apple_iphone_16_pro_128',
+      title: 'Apple iPhone 16 Pro 128GB Desert Titanium',
+      brand: 'Apple',
+      merchant: 'Amazon',
+      merchantKey: 'amazon',
+      currency: 'INR',
+      price: 96990,
+      url: 'https://www.amazon.in/Apple-iPhone-16-Pro-128GB/dp/B0DGH9KGBJ',
+      image: ''
+    },
+    bestOffer: {
+      basePrice: 96990,
+      guaranteedEffectivePrice: 96990,
+      potentialEffectivePrice: 93990,
+      totalSavings: 3000,
+      appliedOffers: [
+        { title: 'Save ₹3,000 with HDFC Card Instant Offer', amount: 3000, code: '' }
+      ],
+      isFreeDelivery: true
+    }
+  },
+  'airpods-pro': {
+    product: {
+      canonicalProductId: 'apple_airpods_pro_2',
+      title: 'Apple AirPods Pro 2nd Gen with USB-C Case',
+      brand: 'Apple',
+      merchant: 'Target',
+      merchantKey: 'target',
+      currency: 'USD',
+      price: 199.99,
+      url: 'https://www.target.com/p/apple-airpods-pro-2nd-gen/-/A-85978612',
+      image: ''
+    },
+    bestOffer: {
+      basePrice: 199.99,
+      guaranteedEffectivePrice: 199.99,
+      potentialEffectivePrice: 189.99,
+      totalSavings: 10.00,
+      appliedOffers: [
+        { title: 'Target Circle 5% Card Savings', amount: 10.00, code: '' }
+      ],
+      isFreeDelivery: true
+    }
+  }
+};
+
 async function renderActiveOfferCard() {
   const mount = document.getElementById('offer-card-mount');
   const liveBadge = document.getElementById('pillar-live-badge');
@@ -205,23 +277,62 @@ async function renderActiveOfferCard() {
   if (!data || !data.product) {
     if (liveBadge) liveBadge.classList.add('hidden');
     mount.innerHTML = `
-      <div class="offer-deal-card" style="text-align: center; padding: 24px 16px;">
+      <div class="offer-deal-card" style="text-align: center; padding: 20px 16px;">
         <div style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: var(--surface-2); margin-bottom: 10px;">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted);"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         </div>
         <div style="font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 4px;">Catch the Best Offer</div>
-        <div style="font-size: 12px; color: var(--muted); line-height: 1.45; max-width: 280px; margin: 0 auto 14px;">
-          Open any product on Amazon, Flipkart, Target, Croma, or Walmart. Catchly will scan for instant coupons, card discounts, and live cross-store comparisons.
+        <div style="font-size: 12px; color: var(--muted); line-height: 1.45; max-width: 280px; margin: 0 auto 12px;">
+          Open any product on Amazon, Flipkart, Target, Croma, or Walmart. Catchly compares 10 major stores automatically.
         </div>
-        <div style="display: flex; justify-content: center; gap: 6px; flex-wrap: wrap;">
+        <div style="display: flex; justify-content: center; gap: 5px; flex-wrap: wrap; margin-bottom: 14px;">
           <span class="offer-merchant-tag">Amazon</span>
           <span class="offer-merchant-tag">Flipkart</span>
           <span class="offer-merchant-tag">Target</span>
           <span class="offer-merchant-tag">Croma</span>
           <span class="offer-merchant-tag">Walmart</span>
         </div>
+
+        <div style="margin-top: 14px; text-align: left; border-top: 1px solid var(--border); padding-top: 12px; width: 100%;">
+          <div style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px;">
+            Preview 10-Store Comparisons
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <button type="button" class="offer-demo-btn" data-demo="sony-camera">
+              <span style="display:flex;align-items:center;gap:6px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary);flex-shrink:0;"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+                <span>Sony Alpha ZV-E10M2K</span>
+              </span>
+              <span style="font-family:var(--font-mono);font-size:11.5px;font-weight:600;color:var(--ink);">₹96,990 →</span>
+            </button>
+            <button type="button" class="offer-demo-btn" data-demo="iphone-16">
+              <span style="display:flex;align-items:center;gap:6px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary);flex-shrink:0;"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+                <span>Apple iPhone 16 Pro 128GB</span>
+              </span>
+              <span style="font-family:var(--font-mono);font-size:11.5px;font-weight:600;color:var(--ink);">₹96,990 →</span>
+            </button>
+            <button type="button" class="offer-demo-btn" data-demo="airpods-pro">
+              <span style="display:flex;align-items:center;gap:6px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary);flex-shrink:0;"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg>
+                <span>AirPods Pro 2 (Target / US)</span>
+              </span>
+              <span style="font-family:var(--font-mono);font-size:11.5px;font-weight:600;color:var(--ink);">$199.99 →</span>
+            </button>
+          </div>
+        </div>
       </div>
     `;
+
+    mount.querySelectorAll('.offer-demo-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const key = e.currentTarget.getAttribute('data-demo');
+        if (DEMO_PRODUCTS[key]) {
+          state.activeOffer = DEMO_PRODUCTS[key];
+          renderActiveOfferCard();
+        }
+      });
+    });
     return;
   }
 
@@ -288,6 +399,13 @@ async function renderActiveOfferCard() {
 
   mount.innerHTML = `
     <div class="offer-deal-card">
+      <div class="offer-demo-switchers">
+        <span style="font-size:10.5px;color:var(--muted);font-weight:600;text-transform:uppercase;">Demo:</span>
+        <button type="button" class="demo-chip ${product.canonicalProductId === 'sony_zv_e10m2k' ? 'active' : ''}" data-demo="sony-camera">Sony ZV-E10M2K</button>
+        <button type="button" class="demo-chip ${product.canonicalProductId === 'apple_iphone_16_pro_128' ? 'active' : ''}" data-demo="iphone-16">iPhone 16 Pro</button>
+        <button type="button" class="demo-chip ${product.canonicalProductId === 'apple_airpods_pro_2' ? 'active' : ''}" data-demo="airpods-pro">AirPods Pro (US)</button>
+      </div>
+
       <div class="offer-card-top">
         ${thumbHtml}
         <div class="offer-card-meta">
@@ -474,6 +592,16 @@ async function renderActiveOfferCard() {
         const old = e.currentTarget.innerText;
         e.currentTarget.innerText = 'Copied!';
         setTimeout(() => { e.currentTarget.innerText = old; }, 1500);
+      }
+    });
+  });
+
+  mount.querySelectorAll('.demo-chip').forEach(chip => {
+    chip.addEventListener('click', (e) => {
+      const key = e.currentTarget.getAttribute('data-demo');
+      if (DEMO_PRODUCTS[key]) {
+        state.activeOffer = DEMO_PRODUCTS[key];
+        renderActiveOfferCard();
       }
     });
   });
